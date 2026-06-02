@@ -103,6 +103,13 @@ def test_update_brewing_method_uses_existing_conn(make_pool, make_conn):
     assert len(conn.last_cursor.calls) == 1
 
 
+def test_update_brewing_method_not_found(make_pool):
+    pool = make_pool(rowcount=0)
+    db = Database(pool)
+    with pytest.raises(NotFound):
+        db.update_brewing_method(BrewingMethod(id=99, method_name='x'))
+
+
 def test_delete_brewing_method_acquires_pool(make_pool):
     pool = make_pool()
     db = Database(pool)
@@ -211,6 +218,13 @@ def test_update_roasting_method_uses_existing_conn(make_pool, make_conn):
     db.update_roasting_method(model, conn=conn)
     assert pool.connection_count == 0
     assert len(conn.last_cursor.calls) == 1
+
+
+def test_update_roasting_method_not_found(make_pool):
+    pool = make_pool(rowcount=0)
+    db = Database(pool)
+    with pytest.raises(NotFound):
+        db.update_roasting_method(RoastingMethod(id=99, roaster_name='x'))
 
 
 def test_delete_roasting_method_acquires_pool(make_pool):
@@ -341,6 +355,18 @@ def test_update_past_log_uses_existing_conn(make_pool, make_conn):
     db.update_past_log(model, conn=conn)
     assert pool.connection_count == 0
     assert len(conn.last_cursor.calls) == 1
+
+
+def test_update_past_log_not_found(make_pool):
+    pool = make_pool(rowcount=0)
+    db = Database(pool)
+    model = PastLog(
+        id=99, bean_name='x', process='Washed',
+        roasting_method_id=1, brewing_method_id=1,
+        grinder_setting='1', rating_score=0,
+    )
+    with pytest.raises(NotFound):
+        db.update_past_log(model)
 
 
 def test_delete_past_log_acquires_pool(make_pool):

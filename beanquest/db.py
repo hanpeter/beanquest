@@ -43,6 +43,8 @@ class Database:
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
             with conn.cursor() as cur:
                 cur.execute(BrewingMethod.UPDATE, brewing_method.model_dump())
+                if cur.rowcount == 0:
+                    raise NotFound(f'BrewingMethod {brewing_method.id} not found')
 
     def delete_brewing_method(self, id: int, conn=None) -> None:
         try:
@@ -81,6 +83,8 @@ class Database:
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
             with conn.cursor() as cur:
                 cur.execute(RoastingMethod.UPDATE, roasting_method.model_dump())
+                if cur.rowcount == 0:
+                    raise NotFound(f'RoastingMethod {roasting_method.id} not found')
 
     def delete_roasting_method(self, id: int, conn=None) -> None:
         try:
@@ -119,6 +123,8 @@ class Database:
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
             with conn.cursor() as cur:
                 cur.execute(PastLog.UPDATE, past_log.model_dump(exclude=PastLog._JOINED_FIELDS))
+                if cur.rowcount == 0:
+                    raise NotFound(f'PastLog {past_log.id} not found')
 
     def delete_past_log(self, id: int, conn=None) -> None:
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
