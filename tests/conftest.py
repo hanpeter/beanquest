@@ -2,11 +2,12 @@ import pytest
 
 
 class FakeCursor:
-    def __init__(self, rows=None, fetchone_val=None, execute_raises=None):
+    def __init__(self, rows=None, fetchone_val=None, execute_raises=None, rowcount=1):
         self.calls = []
         self._rows = rows or []
         self._fetchone_val = fetchone_val
         self._execute_raises = execute_raises
+        self.rowcount = rowcount
 
     def execute(self, sql, params=None):
         self.calls.append((sql, params))
@@ -27,10 +28,11 @@ class FakeCursor:
 
 
 class FakeConnection:
-    def __init__(self, rows=None, fetchone_val=None, execute_raises=None):
+    def __init__(self, rows=None, fetchone_val=None, execute_raises=None, rowcount=1):
         self._rows = rows
         self._fetchone_val = fetchone_val
         self._execute_raises = execute_raises
+        self._rowcount = rowcount
         self._cursors = []
 
     def cursor(self, row_factory=None):
@@ -38,6 +40,7 @@ class FakeConnection:
             rows=self._rows,
             fetchone_val=self._fetchone_val,
             execute_raises=self._execute_raises,
+            rowcount=self._rowcount,
         )
         self._cursors.append(cur)
         return cur
@@ -54,10 +57,11 @@ class FakeConnection:
 
 
 class FakePool:
-    def __init__(self, rows=None, fetchone_val=None, execute_raises=None):
+    def __init__(self, rows=None, fetchone_val=None, execute_raises=None, rowcount=1):
         self._rows = rows
         self._fetchone_val = fetchone_val
         self._execute_raises = execute_raises
+        self._rowcount = rowcount
         self._connections = []
 
     def connection(self):
@@ -65,6 +69,7 @@ class FakePool:
             rows=self._rows,
             fetchone_val=self._fetchone_val,
             execute_raises=self._execute_raises,
+            rowcount=self._rowcount,
         )
         self._connections.append(conn)
         return conn
@@ -80,13 +85,13 @@ class FakePool:
 
 @pytest.fixture
 def make_pool():
-    def _factory(rows=None, fetchone_val=None, execute_raises=None):
-        return FakePool(rows=rows, fetchone_val=fetchone_val, execute_raises=execute_raises)
+    def _factory(rows=None, fetchone_val=None, execute_raises=None, rowcount=1):
+        return FakePool(rows=rows, fetchone_val=fetchone_val, execute_raises=execute_raises, rowcount=rowcount)
     return _factory
 
 
 @pytest.fixture
 def make_conn():
-    def _factory(rows=None, fetchone_val=None, execute_raises=None):
-        return FakeConnection(rows=rows, fetchone_val=fetchone_val, execute_raises=execute_raises)
+    def _factory(rows=None, fetchone_val=None, execute_raises=None, rowcount=1):
+        return FakeConnection(rows=rows, fetchone_val=fetchone_val, execute_raises=execute_raises, rowcount=rowcount)
     return _factory

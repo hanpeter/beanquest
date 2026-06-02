@@ -74,27 +74,23 @@ def test_update_brewing_method_refetches_by_id():
     assert result is model
 
 
-def test_delete_brewing_method_success():
+def test_delete_brewing_method_delegates():
     db = MagicMock()
-    db.get_brewing_method.return_value = _brewing(1)
     app = Application(db)
     app.delete_brewing_method(1)
-    db.get_brewing_method.assert_called_once_with(1)
     db.delete_brewing_method.assert_called_once_with(1)
 
 
-def test_delete_brewing_method_not_found():
+def test_delete_brewing_method_not_found_bubbles():
     db = MagicMock()
-    db.get_brewing_method.return_value = None
+    db.delete_brewing_method.side_effect = NotFound('BrewingMethod 99 not found')
     app = Application(db)
     with pytest.raises(NotFound):
         app.delete_brewing_method(99)
-    db.delete_brewing_method.assert_not_called()
 
 
 def test_delete_brewing_method_conflict_bubbles():
     db = MagicMock()
-    db.get_brewing_method.return_value = _brewing(1)
     db.delete_brewing_method.side_effect = Conflict('referenced')
     app = Application(db)
     with pytest.raises(Conflict):
@@ -151,27 +147,23 @@ def test_update_roasting_method_refetches_by_id():
     assert result is model
 
 
-def test_delete_roasting_method_success():
+def test_delete_roasting_method_delegates():
     db = MagicMock()
-    db.get_roasting_method.return_value = _roasting(2)
     app = Application(db)
     app.delete_roasting_method(2)
-    db.get_roasting_method.assert_called_once_with(2)
     db.delete_roasting_method.assert_called_once_with(2)
 
 
-def test_delete_roasting_method_not_found():
+def test_delete_roasting_method_not_found_bubbles():
     db = MagicMock()
-    db.get_roasting_method.return_value = None
+    db.delete_roasting_method.side_effect = NotFound('RoastingMethod 99 not found')
     app = Application(db)
     with pytest.raises(NotFound):
         app.delete_roasting_method(99)
-    db.delete_roasting_method.assert_not_called()
 
 
 def test_delete_roasting_method_conflict_bubbles():
     db = MagicMock()
-    db.get_roasting_method.return_value = _roasting(2)
     db.delete_roasting_method.side_effect = Conflict('referenced')
     app = Application(db)
     with pytest.raises(Conflict):
@@ -228,19 +220,16 @@ def test_update_past_log_refetches_by_id():
     assert result is model
 
 
-def test_delete_past_log_success():
+def test_delete_past_log_delegates():
     db = MagicMock()
-    db.get_past_log.return_value = _log(3)
     app = Application(db)
     app.delete_past_log(3)
-    db.get_past_log.assert_called_once_with(3)
     db.delete_past_log.assert_called_once_with(3)
 
 
-def test_delete_past_log_not_found():
+def test_delete_past_log_not_found_bubbles():
     db = MagicMock()
-    db.get_past_log.return_value = None
+    db.delete_past_log.side_effect = NotFound('PastLog 99 not found')
     app = Application(db)
     with pytest.raises(NotFound):
         app.delete_past_log(99)
-    db.delete_past_log.assert_not_called()

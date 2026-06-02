@@ -29,7 +29,6 @@ class Application:
         return self.get_brewing_method(brewing_method.id)
 
     def delete_brewing_method(self, id: int) -> None:
-        self.get_brewing_method(id)
         self._database.delete_brewing_method(id)
 
     # -------------------------------------------------------------------------
@@ -54,7 +53,6 @@ class Application:
         return self.get_roasting_method(roasting_method.id)
 
     def delete_roasting_method(self, id: int) -> None:
-        self.get_roasting_method(id)
         self._database.delete_roasting_method(id)
 
     # -------------------------------------------------------------------------
@@ -79,5 +77,4 @@ class Application:
         return self.get_past_log(past_log.id)
 
     def delete_past_log(self, id: int) -> None:
-        self.get_past_log(id)
         self._database.delete_past_log(id)

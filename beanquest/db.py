@@ -3,7 +3,7 @@ from contextlib import contextmanager, nullcontext
 import psycopg
 from psycopg.rows import dict_row
 
-from beanquest.errors import Conflict
+from beanquest.errors import Conflict, NotFound
 from beanquest.models import BrewingMethod, PastLog, RoastingMethod
 
 
@@ -49,6 +49,8 @@ class Database:
             with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
                 with conn.cursor() as cur:
                     cur.execute(BrewingMethod.DELETE, [id])
+                    if cur.rowcount == 0:
+                        raise NotFound(f'BrewingMethod {id} not found')
         except psycopg.errors.ForeignKeyViolation as e:
             raise Conflict(f'BrewingMethod {id} is referenced by existing past_logs') from e
 
@@ -85,6 +87,8 @@ class Database:
             with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
                 with conn.cursor() as cur:
                     cur.execute(RoastingMethod.DELETE, [id])
+                    if cur.rowcount == 0:
+                        raise NotFound(f'RoastingMethod {id} not found')
         except psycopg.errors.ForeignKeyViolation as e:
             raise Conflict(f'RoastingMethod {id} is referenced by existing past_logs') from e
 
@@ -120,3 +124,5 @@ class Database:
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
             with conn.cursor() as cur:
                 cur.execute(PastLog.DELETE, [id])
+                if cur.rowcount == 0:
+                    raise NotFound(f'PastLog {id} not found')
