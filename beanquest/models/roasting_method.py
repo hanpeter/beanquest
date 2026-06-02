@@ -27,6 +27,7 @@ class RoastingMethod(BaseModel):
             modified_at = CURRENT_TIMESTAMP
         WHERE id = %(id)s
     ''')
+    DELETE: ClassVar[str] = 'DELETE FROM roasting_methods WHERE id = %s'
     SERVER_FIELDS: ClassVar[frozenset[str]] = frozenset({'created_at', 'modified_at'})
 
     id: int | None = None

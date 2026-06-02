@@ -28,6 +28,10 @@ class Application:
         self._database.update_brewing_method(brewing_method)
         return self.get_brewing_method(brewing_method.id)
 
+    def delete_brewing_method(self, id: int) -> None:
+        self.get_brewing_method(id)
+        self._database.delete_brewing_method(id)
+
     # -------------------------------------------------------------------------
     # RoastingMethod
     # -------------------------------------------------------------------------
@@ -49,6 +53,10 @@ class Application:
         self._database.update_roasting_method(roasting_method)
         return self.get_roasting_method(roasting_method.id)
 
+    def delete_roasting_method(self, id: int) -> None:
+        self.get_roasting_method(id)
+        self._database.delete_roasting_method(id)
+
     # -------------------------------------------------------------------------
     # PastLog
     # -------------------------------------------------------------------------
@@ -69,3 +77,7 @@ class Application:
     def update_past_log(self, past_log: PastLog) -> PastLog:
         self._database.update_past_log(past_log)
         return self.get_past_log(past_log.id)
+
+    def delete_past_log(self, id: int) -> None:
+        self.get_past_log(id)
+        self._database.delete_past_log(id)

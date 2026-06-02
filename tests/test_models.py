@@ -84,6 +84,11 @@ def test_brewing_method_select_one_extends_all():
     assert 'WHERE id = %s' in BrewingMethod.SELECT_ONE
 
 
+def test_brewing_method_delete_sql():
+    assert 'brewing_methods' in BrewingMethod.DELETE
+    assert 'WHERE id = %s' in BrewingMethod.DELETE
+
+
 # ---------------------------------------------------------------------------
 # RoastingMethod
 # ---------------------------------------------------------------------------
@@ -120,6 +125,11 @@ def test_roasting_method_sql_references_table():
     assert 'roasting_methods' in RoastingMethod.SELECT_ALL
     assert 'roasting_methods' in RoastingMethod.INSERT
     assert 'roasting_methods' in RoastingMethod.UPDATE
+
+
+def test_roasting_method_delete_sql():
+    assert 'roasting_methods' in RoastingMethod.DELETE
+    assert 'WHERE id = %s' in RoastingMethod.DELETE
 
 
 # ---------------------------------------------------------------------------
@@ -202,6 +212,11 @@ def test_past_log_select_one_has_where():
 def test_past_log_insert_references_table():
     assert 'past_logs' in PastLog.INSERT
     assert 'rating_score' in PastLog.INSERT
+
+
+def test_past_log_delete_sql():
+    assert 'past_logs' in PastLog.DELETE
+    assert 'WHERE id = %s' in PastLog.DELETE
 
 
 def test_past_log_model_dump_excludes_joined_fields():

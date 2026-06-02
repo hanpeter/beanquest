@@ -54,6 +54,7 @@ class PastLog(BaseModel):
             general_notes = %(general_notes)s
         WHERE id = %(id)s
     ''')
+    DELETE: ClassVar[str] = 'DELETE FROM past_logs WHERE id = %s'
     SERVER_FIELDS: ClassVar[frozenset[str]] = frozenset({
         'brewing_method_name', 'roasting_method_name', 'date_logged',
     })

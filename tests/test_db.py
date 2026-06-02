@@ -1,4 +1,7 @@
+import psycopg.errors
+
 from beanquest.db import Database
+from beanquest.errors import Conflict
 from beanquest.models import BrewingMethod, PastLog, RoastingMethod
 
 # ---------------------------------------------------------------------------
@@ -99,6 +102,35 @@ def test_update_brewing_method_uses_existing_conn(make_pool, make_conn):
     assert len(conn.last_cursor.calls) == 1
 
 
+def test_delete_brewing_method_acquires_pool(make_pool):
+    pool = make_pool()
+    db = Database(pool)
+    db.delete_brewing_method(1)
+    assert pool.connection_count == 1
+    sql, params = pool.last_conn.last_cursor.calls[0]
+    assert sql == BrewingMethod.DELETE
+    assert params == [1]
+
+
+def test_delete_brewing_method_uses_existing_conn(make_pool, make_conn):
+    pool = make_pool()
+    conn = make_conn()
+    db = Database(pool)
+    db.delete_brewing_method(1, conn=conn)
+    assert pool.connection_count == 0
+    assert len(conn.last_cursor.calls) == 1
+
+
+def test_delete_brewing_method_fk_violation_raises_conflict(make_pool):
+    exc = psycopg.errors.ForeignKeyViolation('mock fk violation')
+    pool = make_pool(execute_raises=exc)
+    db = Database(pool)
+    import pytest
+    with pytest.raises(Conflict) as exc_info:
+        db.delete_brewing_method(1)
+    assert '1' in str(exc_info.value)
+
+
 # ===========================================================================
 # RoastingMethod
 # ===========================================================================
@@ -172,6 +204,35 @@ def test_update_roasting_method_uses_existing_conn(make_pool, make_conn):
     db.update_roasting_method(model, conn=conn)
     assert pool.connection_count == 0
     assert len(conn.last_cursor.calls) == 1
+
+
+def test_delete_roasting_method_acquires_pool(make_pool):
+    pool = make_pool()
+    db = Database(pool)
+    db.delete_roasting_method(2)
+    assert pool.connection_count == 1
+    sql, params = pool.last_conn.last_cursor.calls[0]
+    assert sql == RoastingMethod.DELETE
+    assert params == [2]
+
+
+def test_delete_roasting_method_uses_existing_conn(make_pool, make_conn):
+    pool = make_pool()
+    conn = make_conn()
+    db = Database(pool)
+    db.delete_roasting_method(2, conn=conn)
+    assert pool.connection_count == 0
+    assert len(conn.last_cursor.calls) == 1
+
+
+def test_delete_roasting_method_fk_violation_raises_conflict(make_pool):
+    import pytest
+    exc = psycopg.errors.ForeignKeyViolation('mock fk violation')
+    pool = make_pool(execute_raises=exc)
+    db = Database(pool)
+    with pytest.raises(Conflict) as exc_info:
+        db.delete_roasting_method(2)
+    assert '2' in str(exc_info.value)
 
 
 # ===========================================================================
@@ -265,6 +326,25 @@ def test_update_past_log_uses_existing_conn(make_pool, make_conn):
         grinder_setting='1', rating_score=2,
     )
     db.update_past_log(model, conn=conn)
+    assert pool.connection_count == 0
+    assert len(conn.last_cursor.calls) == 1
+
+
+def test_delete_past_log_acquires_pool(make_pool):
+    pool = make_pool()
+    db = Database(pool)
+    db.delete_past_log(3)
+    assert pool.connection_count == 1
+    sql, params = pool.last_conn.last_cursor.calls[0]
+    assert sql == PastLog.DELETE
+    assert params == [3]
+
+
+def test_delete_past_log_uses_existing_conn(make_pool, make_conn):
+    pool = make_pool()
+    conn = make_conn()
+    db = Database(pool)
+    db.delete_past_log(3, conn=conn)
     assert pool.connection_count == 0
     assert len(conn.last_cursor.calls) == 1
 

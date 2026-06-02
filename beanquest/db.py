@@ -1,7 +1,9 @@
 from contextlib import contextmanager, nullcontext
 
+import psycopg
 from psycopg.rows import dict_row
 
+from beanquest.errors import Conflict
 from beanquest.models import BrewingMethod, PastLog, RoastingMethod
 
 
@@ -42,6 +44,14 @@ class Database:
             with conn.cursor() as cur:
                 cur.execute(BrewingMethod.UPDATE, brewing_method.model_dump())
 
+    def delete_brewing_method(self, id: int, conn=None) -> None:
+        try:
+            with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(BrewingMethod.DELETE, [id])
+        except psycopg.errors.ForeignKeyViolation as e:
+            raise Conflict(f'BrewingMethod {id} is referenced by existing past_logs') from e
+
     # -------------------------------------------------------------------------
     # RoastingMethod
     # -------------------------------------------------------------------------
@@ -70,6 +80,14 @@ class Database:
             with conn.cursor() as cur:
                 cur.execute(RoastingMethod.UPDATE, roasting_method.model_dump())
 
+    def delete_roasting_method(self, id: int, conn=None) -> None:
+        try:
+            with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(RoastingMethod.DELETE, [id])
+        except psycopg.errors.ForeignKeyViolation as e:
+            raise Conflict(f'RoastingMethod {id} is referenced by existing past_logs') from e
+
     # -------------------------------------------------------------------------
     # PastLog
     # -------------------------------------------------------------------------
@@ -97,3 +115,8 @@ class Database:
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
             with conn.cursor() as cur:
                 cur.execute(PastLog.UPDATE, past_log.model_dump(exclude=PastLog._JOINED_FIELDS))
+
+    def delete_past_log(self, id: int, conn=None) -> None:
+        with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
+            with conn.cursor() as cur:
+                cur.execute(PastLog.DELETE, [id])
