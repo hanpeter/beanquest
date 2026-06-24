@@ -208,6 +208,9 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# ── BeanQuest frontend build ───────────────────────────────────────────────────
+beanquest/static/
+
 # ── Node ──────────────────────────────────────────────────────────────────────
 # Logs
 logs

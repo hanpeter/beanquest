@@ -1,15 +1,19 @@
 import os
+import pathlib
 from contextlib import asynccontextmanager
 from typing import Annotated
 
 import psycopg_pool
 from fastapi import APIRouter, Depends, FastAPI, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from beanquest.application import Application
 from beanquest.db import Database
 from beanquest.errors import Conflict, NotFound
 from beanquest.models import BrewingMethod, PastLog, RoastingMethod
+
+STATIC_DIR = pathlib.Path(__file__).parent / 'static'
 
 
 # ---------------------------------------------------------------------------
@@ -163,3 +167,15 @@ def delete_past_log(id: int, app: AppDep):
 app.include_router(brewing_router)
 app.include_router(roasting_router)
 app.include_router(past_logs_router)
+
+
+# ---------------------------------------------------------------------------
+# SPA static serving (only when the frontend has been built)
+# ---------------------------------------------------------------------------
+
+if STATIC_DIR.exists():
+    app.mount('/assets', StaticFiles(directory=STATIC_DIR / 'assets'), name='assets')
+
+    @app.get('/{full_path:path}', include_in_schema=False)
+    def spa_fallback(_full_path: str) -> FileResponse:
+        return FileResponse(STATIC_DIR / 'index.html')
