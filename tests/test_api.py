@@ -322,3 +322,10 @@ def test_delete_past_log_not_found(client):
     mock.delete_past_log.side_effect = NotFound('PastLog 99 not found')
     r = c.delete('/api/v1/past-logs/99')
     assert r.status_code == 404
+
+
+def test_spa_fallback(client):
+    c, _ = client
+    r = c.get('/some/spa/route')
+    assert r.status_code == 200
+    assert 'text/html' in r.headers['content-type']
