@@ -10,7 +10,7 @@ COPY frontend/src ./src
 
 RUN npm run build
 
-FROM python:3.13-slim AS builder
+FROM python:3.13-slim AS backend-builder
 
 ENV POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_IN_PROJECT=1 \
@@ -39,8 +39,8 @@ FROM gcr.io/distroless/python3-debian13 AS runtime
 
 WORKDIR /beanquest
 
-COPY --from=builder /beanquest/.venv /beanquest/.venv
-COPY --from=builder /beanquest/beanquest /beanquest/beanquest
+COPY --from=backend-builder /beanquest/.venv /beanquest/.venv
+COPY --from=backend-builder /beanquest/beanquest /beanquest/beanquest
 COPY --from=frontend-builder /beanquest/static/ /beanquest/beanquest/static/
 
 EXPOSE 8000
