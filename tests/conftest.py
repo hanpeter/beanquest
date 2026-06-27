@@ -1,4 +1,13 @@
+import pathlib
+
 import pytest
+
+# Create a minimal static dir stub so SPA routes are registered at module import
+# time. Vite's emptyOutDir:true replaces these when the frontend is actually built.
+_static = pathlib.Path(__file__).parent.parent / 'beanquest' / 'static'
+_static.mkdir(parents=True, exist_ok=True)
+(_static / 'index.html').touch(exist_ok=True)
+(_static / 'assets').mkdir(exist_ok=True)
 
 
 class FakeCursor:

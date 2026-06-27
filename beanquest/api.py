@@ -177,5 +177,5 @@ if STATIC_DIR.exists():
     app.mount('/assets', StaticFiles(directory=STATIC_DIR / 'assets'), name='assets')
 
     @app.get('/{full_path:path}', include_in_schema=False)
-    def spa_fallback(_full_path: str) -> FileResponse:
+    def spa_fallback() -> FileResponse:
         return FileResponse(STATIC_DIR / 'index.html')
