@@ -42,16 +42,14 @@ import { LogDetail } from '../components/LogDetail';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
 // FAB `right` offset, derived from CONTENT_WIDTH_PCT so the two can't drift apart.
-// `xs` is a flat 24px since the column is full-bleed ('100%') at that breakpoint.
-const FAB_RIGHT = {
-  xs: 24,
-  ...Object.fromEntries(
-    (['sm', 'md', 'lg'] as const).map(bp => {
-      const gapVw = (100 - CONTENT_WIDTH_PCT[bp]) / 2;
-      return [bp, `max(24px, calc(${gapVw}vw + 24px))`];
-    }),
-  ),
-} as const;
+// At full-bleed breakpoints (gap 0) this simplifies to a flat 24px, same as the
+// max() floor, so no special-casing is needed.
+const FAB_RIGHT = Object.fromEntries(
+  Object.entries(CONTENT_WIDTH_PCT).map(([bp, pct]) => {
+    const gapVw = (100 - pct) / 2;
+    return [bp, `max(24px, calc(${gapVw}vw + 24px))`];
+  }),
+) as Record<keyof typeof CONTENT_WIDTH_PCT, string>;
 
 export function LogsPage() {
   // ---------------------------------------------------------------------------
