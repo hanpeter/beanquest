@@ -10,6 +10,7 @@ import type { PastLog } from '../types';
 import { fmtLong } from '../logic/logs';
 import { Stars } from './Stars';
 import { useWideLayout } from '../hooks/useWideLayout';
+import { CONTENT_MAX_WIDTH } from '../constants';
 
 interface LogDetailProps {
   log: PastLog;
@@ -104,6 +105,7 @@ export function LogDetail({ log, siblings, onBack, onOpenSibling, onBrewAgain, o
       </Box>
 
       <Box sx={{ flex: 1, overflow: 'auto' }}>
+      <Box sx={{ maxWidth: CONTENT_MAX_WIDTH, mx: 'auto' }}>
         <Box sx={{ px: 2, py: 2 }}>
           <Typography variant="h5" fontWeight={700}>
             {log.bean_name}
@@ -184,6 +186,7 @@ export function LogDetail({ log, siblings, onBack, onOpenSibling, onBrewAgain, o
             ))}
           </Box>
         )}
+      </Box>
       </Box>
     </Dialog>
   );

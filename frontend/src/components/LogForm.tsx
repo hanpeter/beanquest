@@ -8,6 +8,7 @@ import {
   Typography,
 } from '@mui/material';
 import type { BrewingMethod, KnownBean, PastLogInput, RoastingMethod } from '../types';
+import { CONTENT_MAX_WIDTH } from '../constants';
 
 interface LogFormProps {
   title: string;
@@ -234,6 +235,7 @@ export function LogForm({
         </Box>
 
         <Box sx={{ flex: 1, overflow: 'auto' }}>
+        <Box sx={{ maxWidth: CONTENT_MAX_WIDTH, mx: 'auto' }}>
           {error && (
             <Alert severity="error" sx={{ m: 2 }}>
               {error}
@@ -347,6 +349,7 @@ export function LogForm({
               onChange={e => setDateLogged(e.target.value)}
             />
           </Box>
+        </Box>
         </Box>
       </Box>
     </Dialog>

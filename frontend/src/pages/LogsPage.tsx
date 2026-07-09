@@ -19,7 +19,7 @@ import type {
   BrewingMethod,
   SortKey,
 } from '../types';
-import { SORT_LABEL } from '../constants';
+import { SORT_LABEL, CONTENT_MAX_WIDTH, CONTENT_WIDTH_PCT } from '../constants';
 import {
   activeCount,
   distinctBeans,
@@ -40,17 +40,6 @@ import { SortSheet } from '../components/SortSheet';
 import { LogForm } from '../components/LogForm';
 import { LogDetail } from '../components/LogDetail';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-
-// Content column width as a percentage of the viewport, by MUI breakpoint —
-// percentage (not a px cap) so the column keeps growing on very large screens.
-const CONTENT_WIDTH_PCT = { sm: 90, md: 85, lg: 80 } as const;
-
-const CONTENT_MAX_WIDTH = {
-  xs: '100%',
-  sm: `${CONTENT_WIDTH_PCT.sm}%`,
-  md: `${CONTENT_WIDTH_PCT.md}%`,
-  lg: `${CONTENT_WIDTH_PCT.lg}%`,
-} as const;
 
 // FAB `right` offset, derived from CONTENT_WIDTH_PCT so the two can't drift apart.
 // `xs` is a flat 24px since the column is full-bleed ('100%') at that breakpoint.
