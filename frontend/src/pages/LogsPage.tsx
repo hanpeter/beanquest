@@ -41,18 +41,26 @@ import { LogForm } from '../components/LogForm';
 import { LogDetail } from '../components/LogDetail';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
-// Responsive width of the centered content column, by MUI breakpoint.
-const CONTENT_MAX_WIDTH = { xs: '100%', sm: 600, md: 760, lg: 900 } as const;
+// Content column width as a percentage of the viewport, by MUI breakpoint —
+// percentage (not a px cap) so the column keeps growing on very large screens.
+const CONTENT_WIDTH_PCT = { sm: 90, md: 85, lg: 80 } as const;
 
-// FAB `right` offset, derived from CONTENT_MAX_WIDTH so the two can't drift apart.
+const CONTENT_MAX_WIDTH = {
+  xs: '100%',
+  sm: `${CONTENT_WIDTH_PCT.sm}%`,
+  md: `${CONTENT_WIDTH_PCT.md}%`,
+  lg: `${CONTENT_WIDTH_PCT.lg}%`,
+} as const;
+
+// FAB `right` offset, derived from CONTENT_WIDTH_PCT so the two can't drift apart.
 // `xs` is a flat 24px since the column is full-bleed ('100%') at that breakpoint.
 const FAB_RIGHT = {
   xs: 24,
   ...Object.fromEntries(
-    (['sm', 'md', 'lg'] as const).map(bp => [
-      bp,
-      `max(24px, calc((100vw - ${CONTENT_MAX_WIDTH[bp]}px) / 2 + 24px))`,
-    ]),
+    (['sm', 'md', 'lg'] as const).map(bp => {
+      const gapVw = (100 - CONTENT_WIDTH_PCT[bp]) / 2;
+      return [bp, `max(24px, calc(${gapVw}vw + 24px))`];
+    }),
   ),
 } as const;
 
