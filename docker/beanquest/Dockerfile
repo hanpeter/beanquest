@@ -24,17 +24,12 @@ WORKDIR /beanquest
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --without dev --no-root
 
-COPY beanquest/ ./beanquest/
-COPY README.md ./
-
-RUN poetry build -f wheel && \
-    /usr/local/bin/pip install --no-cache-dir dist/*.whl
-
 FROM gcr.io/distroless/python3-debian13 AS runtime
 
 WORKDIR /beanquest
 
 COPY --from=backend-builder /usr/local/lib/python3.13/site-packages/ ./
+COPY beanquest/ ./beanquest/
 COPY --from=frontend-builder /beanquest/static/ ./beanquest/static/
 
 ENV PYTHONPATH=/beanquest \
