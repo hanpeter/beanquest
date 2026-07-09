@@ -73,11 +73,40 @@ describe('LogsPage', () => {
     await userEvent.click(screen.getByLabelText('New log'));
     const form = within(screen.getByRole('dialog'));
     await userEvent.type(form.getByPlaceholderText('Start typing… e.g. Guatemala'), 'Kenya Nyeri AA');
-    await userEvent.click(form.getByText('Washed'));
+    await userEvent.type(form.getByPlaceholderText('Start typing… e.g. Washed'), 'Washed');
     await userEvent.click(form.getByText('Popcorn popper'));
     await userEvent.click(form.getByText('Manual espresso'));
     await userEvent.click(form.getByLabelText('Rate 5'));
     await userEvent.click(form.getByText('Save'));
     await waitFor(() => expect(screen.getByText('Kenya Nyeri AA')).toBeInTheDocument());
+  });
+
+  it('keeps the form open and shows an error if creating a log fails', async () => {
+    vi.spyOn(api, 'createPastLog').mockRejectedValue(new Error('500 Internal Server Error'));
+    await renderPage();
+    await userEvent.click(screen.getByLabelText('New log'));
+    const form = within(screen.getByRole('dialog'));
+    await userEvent.type(form.getByPlaceholderText('Start typing… e.g. Guatemala'), 'Kenya Nyeri AA');
+    await userEvent.type(form.getByPlaceholderText('Start typing… e.g. Washed'), 'Washed');
+    await userEvent.click(form.getByText('Popcorn popper'));
+    await userEvent.click(form.getByText('Manual espresso'));
+    await userEvent.click(form.getByLabelText('Rate 5'));
+    await userEvent.click(form.getByText('Save'));
+
+    await waitFor(() => expect(form.getByText('500 Internal Server Error')).toBeInTheDocument());
+    expect(form.getByPlaceholderText('Start typing… e.g. Guatemala')).toBeInTheDocument();
+    expect(form.getByText('Save')).not.toBeDisabled();
+  });
+
+  it('keeps the confirm dialog open and shows an error if deleting a log fails', async () => {
+    vi.spyOn(api, 'deletePastLog').mockRejectedValue(new Error('500 Internal Server Error'));
+    await renderPage();
+    await userEvent.click(screen.getByText('20 clicks', { exact: false }));
+    await userEvent.click(screen.getByLabelText('Delete'));
+    await userEvent.click(screen.getByText('Delete', { selector: 'button' }));
+
+    await waitFor(() => expect(screen.getByText('500 Internal Server Error')).toBeInTheDocument());
+    expect(screen.getByLabelText('Delete')).toBeInTheDocument(); // detail panel still open
+    expect(screen.getByText('Delete this log?')).toBeInTheDocument();
   });
 });

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
+  Alert,
   Autocomplete,
   Box,
   Dialog,
@@ -7,20 +8,25 @@ import {
   Typography,
 } from '@mui/material';
 import type { BrewingMethod, KnownBean, PastLogInput, RoastingMethod } from '../types';
-import { PROCESSES } from '../constants';
 
 interface LogFormProps {
   title: string;
   seed: Partial<PastLogInput>;
   knownBeans: KnownBean[];
+  processOptions: string[];
   roastingMethods: RoastingMethod[];
   brewingMethods: BrewingMethod[];
+  saving?: boolean;
+  error?: string | null;
   onCancel: () => void;
   onSave: (input: PastLogInput) => void;
 }
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
 interface PickChipProps<T> {
@@ -39,6 +45,7 @@ function PickRow<T>({ options, value, label, onSelect }: PickChipProps<T>) {
           <Box
             key={i}
             component="button"
+            type="button"
             onClick={() => onSelect(o)}
             sx={{
               px: 1.5,
@@ -81,6 +88,7 @@ function StarPicker({ value, onChange }: StarPickerProps) {
           <Box
             key={n}
             component="button"
+            type="button"
             onClick={() => onChange(value === n ? 0 : n)}
             aria-label={`Rate ${n}`}
             aria-pressed={on}
@@ -128,8 +136,11 @@ export function LogForm({
   title,
   seed,
   knownBeans,
+  processOptions,
   roastingMethods,
   brewingMethods,
+  saving = false,
+  error = null,
   onCancel,
   onSave,
 }: LogFormProps) {
@@ -152,9 +163,10 @@ export function LogForm({
   };
 
   const valid = bean.trim() && process && roastingMethodId != null && brewingMethodId != null && rating != null;
+  const canSave = valid && !saving;
 
   const save = () => {
-    if (!valid) return;
+    if (!canSave) return;
     onSave({
       bean_name: bean.trim(),
       process,
@@ -169,139 +181,172 @@ export function LogForm({
   };
 
   return (
-    <Dialog fullScreen open onClose={onCancel}>
+    <Dialog fullScreen open onClose={saving ? undefined : onCancel}>
       <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          px: 2,
-          py: 1.5,
-          borderBottom: 1,
-          borderColor: 'divider',
-        }}
+        component="form"
+        onSubmit={e => { e.preventDefault(); save(); }}
+        sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}
       >
         <Box
-          component="button"
-          onClick={onCancel}
-          sx={{ border: 0, bgcolor: 'transparent', cursor: 'pointer', typography: 'body1', color: 'text.primary' }}
-        >
-          Cancel
-        </Box>
-        <Typography variant="subtitle1" fontWeight={600}>
-          {title}
-        </Typography>
-        <Box
-          component="button"
-          onClick={save}
-          disabled={!valid}
           sx={{
-            border: 0,
-            bgcolor: 'transparent',
-            cursor: valid ? 'pointer' : 'default',
-            typography: 'body1',
-            fontWeight: 600,
-            color: valid ? 'primary.main' : 'text.disabled',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 2,
+            py: 1.5,
+            borderBottom: 1,
+            borderColor: 'divider',
           }}
         >
-          Save
-        </Box>
-      </Box>
-
-      <Box sx={{ flex: 1, overflow: 'auto' }}>
-        <Field label="Bean" required>
-          <Autocomplete
-            freeSolo
-            options={beanOptions}
-            inputValue={bean}
-            onInputChange={(_e, value, reason) => {
-              if (reason === 'input') pickBean(value);
+          <Box
+            component="button"
+            type="button"
+            onClick={onCancel}
+            disabled={saving}
+            sx={{
+              border: 0,
+              bgcolor: 'transparent',
+              cursor: saving ? 'default' : 'pointer',
+              typography: 'body1',
+              color: saving ? 'text.disabled' : 'text.primary',
             }}
-            onChange={(_e, value) => {
-              if (value) pickBean(value);
-            }}
-            renderInput={params => (
-              <TextField {...params} placeholder="Start typing… e.g. Guatemala" size="small" />
-            )}
-          />
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
-            Pick an existing bean to carry its process over, or keep typing to add a new one.
-          </Typography>
-        </Field>
-
-        <Field label="Process" required>
-          <PickRow options={PROCESSES} value={process || null} label={p => p} onSelect={setProcess} />
-        </Field>
-
-        <Field label="Roasting method" required>
-          <PickRow
-            options={roastingMethods}
-            value={roastingMethods.find(r => r.id === roastingMethodId) ?? null}
-            label={r => r.roaster_name}
-            onSelect={r => setRoastingMethodId(r.id)}
-          />
-        </Field>
-
-        <Field label="Roasting notes">
-          <TextField
-            multiline
-            minRows={2}
-            fullWidth
-            placeholder="Time, first crack, heat/fan profile, stirring…"
-            value={roastingNotes}
-            onChange={e => setRoastingNotes(e.target.value)}
-          />
-        </Field>
-
-        <Field label="Brewing method" required>
-          <PickRow
-            options={brewingMethods}
-            value={brewingMethods.find(b => b.id === brewingMethodId) ?? null}
-            label={b => b.method_name}
-            onSelect={b => setBrewingMethodId(b.id)}
-          />
-        </Field>
-
-        <Field label="Grinder setting">
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="e.g. 20 clicks, Step 11"
-            value={grinderSetting}
-            onChange={e => setGrinderSetting(e.target.value)}
-          />
-        </Field>
-
-        <Field label="Rating" required>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <StarPicker value={rating} onChange={setRating} />
-            <Typography variant="body2" color="text.secondary">
-              {rating == null ? 'Tap to rate' : `${rating} / 5`}
-            </Typography>
+          >
+            Cancel
           </Box>
-        </Field>
-
-        <Field label="General notes">
-          <TextField
-            multiline
-            minRows={2}
-            fullWidth
-            placeholder="Tasting notes, what to change next time…"
-            value={generalNotes}
-            onChange={e => setGeneralNotes(e.target.value)}
-          />
-        </Field>
-
-        <Box sx={{ px: 2, py: 1.5 }}>
-          <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>
-            Date logged
+          <Typography variant="subtitle1" fontWeight={600}>
+            {title}
           </Typography>
-          <TextField
-            type="date"
-            size="small"
-            value={dateLogged}
-            onChange={e => setDateLogged(e.target.value)}
-          />
+          <Box
+            component="button"
+            type="submit"
+            disabled={!canSave}
+            sx={{
+              border: 0,
+              bgcolor: 'transparent',
+              cursor: canSave ? 'pointer' : 'default',
+              typography: 'body1',
+              fontWeight: 600,
+              color: canSave ? 'primary.main' : 'text.disabled',
+            }}
+          >
+            {saving ? 'Saving…' : 'Save'}
+          </Box>
+        </Box>
+
+        <Box sx={{ flex: 1, overflow: 'auto' }}>
+          {error && (
+            <Alert severity="error" sx={{ m: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          <Field label="Bean" required>
+            <Autocomplete
+              freeSolo
+              options={beanOptions}
+              inputValue={bean}
+              onInputChange={(_e, value, reason) => {
+                if (reason === 'input') pickBean(value);
+              }}
+              onChange={(_e, value) => {
+                if (value) pickBean(value);
+              }}
+              renderInput={params => (
+                <TextField {...params} placeholder="Start typing… e.g. Guatemala" size="small" />
+              )}
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
+              Pick an existing bean to carry its process over, or keep typing to add a new one.
+            </Typography>
+          </Field>
+
+          <Field label="Process" required>
+            <Autocomplete
+              freeSolo
+              options={processOptions}
+              inputValue={process}
+              onInputChange={(_e, value, reason) => {
+                if (reason === 'input') setProcess(value);
+              }}
+              onChange={(_e, value) => {
+                if (value) setProcess(value);
+              }}
+              renderInput={params => (
+                <TextField {...params} placeholder="Start typing… e.g. Washed" size="small" />
+              )}
+            />
+          </Field>
+
+          <Field label="Roasting method" required>
+            <PickRow
+              options={roastingMethods}
+              value={roastingMethods.find(r => r.id === roastingMethodId) ?? null}
+              label={r => r.roaster_name}
+              onSelect={r => setRoastingMethodId(r.id)}
+            />
+          </Field>
+
+          <Field label="Roasting notes">
+            <TextField
+              multiline
+              minRows={2}
+              fullWidth
+              placeholder="Time, first crack, heat/fan profile, stirring…"
+              value={roastingNotes}
+              onChange={e => setRoastingNotes(e.target.value)}
+            />
+          </Field>
+
+          <Field label="Brewing method" required>
+            <PickRow
+              options={brewingMethods}
+              value={brewingMethods.find(b => b.id === brewingMethodId) ?? null}
+              label={b => b.method_name}
+              onSelect={b => setBrewingMethodId(b.id)}
+            />
+          </Field>
+
+          <Field label="Grinder setting">
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="e.g. 20 clicks, Step 11"
+              value={grinderSetting}
+              onChange={e => setGrinderSetting(e.target.value)}
+            />
+          </Field>
+
+          <Field label="Rating" required>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <StarPicker value={rating} onChange={setRating} />
+              <Typography variant="body2" color="text.secondary">
+                {rating == null ? 'Tap to rate' : `${rating} / 5`}
+              </Typography>
+            </Box>
+          </Field>
+
+          <Field label="General notes">
+            <TextField
+              multiline
+              minRows={2}
+              fullWidth
+              placeholder="Tasting notes, what to change next time…"
+              value={generalNotes}
+              onChange={e => setGeneralNotes(e.target.value)}
+            />
+          </Field>
+
+          <Box sx={{ px: 2, py: 1.5 }}>
+            <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>
+              Date logged
+            </Typography>
+            <TextField
+              type="date"
+              size="small"
+              value={dateLogged}
+              onChange={e => setDateLogged(e.target.value)}
+            />
+          </Box>
         </Box>
       </Box>
     </Dialog>

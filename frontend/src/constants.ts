@@ -13,6 +13,3 @@ export const SORT_LABEL: Record<SortKey, string> = {
   'rating-desc': 'Rating',
   'rating-asc': 'Rating',
 };
-
-/** Fixed process enum offered as single-select chips on the New Log form. */
-export const PROCESSES = ['Washed', 'Natural', 'Honey', 'Anaerobic'];

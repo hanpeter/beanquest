@@ -24,6 +24,7 @@ function renderForm(overrides: Partial<React.ComponentProps<typeof LogForm>> = {
       title="New log"
       seed={{}}
       knownBeans={KNOWN_BEANS}
+      processOptions={['Washed', 'Natural']}
       roastingMethods={ROASTING}
       brewingMethods={BREWING}
       onCancel={onCancel}
@@ -50,15 +51,27 @@ describe('LogForm', () => {
   it('enables Save once bean, process, both methods, and rating are set, then saves the payload', async () => {
     const { onSave } = renderForm();
 
+    // Regression guard: PickRow/StarPicker buttons must declare type="button".
+    // Without it, a <button> inside the form's <form onSubmit> wrapper (added
+    // for Enter-key support) defaults to type="submit" and clicking it fires a
+    // native implicit form submission — checked at the DOM level since React's
+    // batched state update can otherwise mask the symptom in onSave call counts.
+    const submits = vi.fn();
+    document.addEventListener('submit', submits, true);
+
     await userEvent.type(screen.getByPlaceholderText('Start typing… e.g. Guatemala'), 'New Bean');
-    await userEvent.click(screen.getByText('Washed'));
+    await userEvent.type(screen.getByPlaceholderText('Start typing… e.g. Washed'), 'Washed');
     await userEvent.click(screen.getByText('Popcorn popper'));
     await userEvent.click(screen.getByText('Manual espresso'));
     await userEvent.click(screen.getByLabelText('Rate 4'));
 
+    expect(submits).not.toHaveBeenCalled();
+    document.removeEventListener('submit', submits, true);
+
     expect(screen.getByText('Save')).not.toBeDisabled();
     await userEvent.click(screen.getByText('Save'));
 
+    expect(onSave).toHaveBeenCalledOnce();
     expect(onSave).toHaveBeenCalledWith({
       bean_name: 'New Bean',
       process: 'Washed',
@@ -75,13 +88,24 @@ describe('LogForm', () => {
   it('auto-fills process when picking a known bean, and clears it when typing a new name', async () => {
     renderForm();
     const beanInput = screen.getByPlaceholderText('Start typing… e.g. Guatemala');
+    const processInput = screen.getByPlaceholderText('Start typing… e.g. Washed');
     await userEvent.type(beanInput, 'Guatemala Huehuetenango');
-    // Selecting the known bean should highlight its process chip as active —
-    // verified indirectly: typing a fresh name after clears any prior process pick.
+    expect(processInput).toHaveValue('Washed');
+
     await userEvent.clear(beanInput);
     await userEvent.type(beanInput, 'Something else entirely');
+    expect(processInput).toHaveValue('');
     // Save should still require process, since typing a new bean clears it.
     expect(screen.getByText('Save')).toBeDisabled();
+  });
+
+  it('process field accepts free-form text not in processOptions', async () => {
+    const { onSave } = renderForm({
+      seed: { bean_name: 'X', roasting_method_id: 1, brewing_method_id: 1, rating_score: 4 },
+    });
+    await userEvent.type(screen.getByPlaceholderText('Start typing… e.g. Washed'), 'Semi-washed');
+    await userEvent.click(screen.getByText('Save'));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ process: 'Semi-washed' }));
   });
 
   it('pre-fills fields from seed (edit mode)', () => {
@@ -119,5 +143,28 @@ describe('LogForm', () => {
     expect(screen.getByText('Save')).not.toBeDisabled();
     await userEvent.click(screen.getByText('Save'));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ rating_score: 0 }));
+  });
+
+  it('submits on Enter in a single-line field once the form is valid', async () => {
+    const { onSave } = renderForm({
+      seed: {
+        bean_name: 'X', process: 'Washed', roasting_method_id: 1, brewing_method_id: 1, rating_score: 4,
+      },
+    });
+    await userEvent.type(screen.getByPlaceholderText('e.g. 20 clicks, Step 11'), '{Enter}');
+    expect(onSave).toHaveBeenCalledOnce();
+  });
+
+  it('does not submit on Enter while invalid', async () => {
+    const { onSave } = renderForm();
+    await userEvent.type(screen.getByPlaceholderText('Start typing… e.g. Guatemala'), '{Enter}');
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('disables Cancel and shows "Saving…" while saving, and shows the error message on failure', () => {
+    renderForm({ saving: true, error: 'Something went wrong' });
+    expect(screen.getByText('Cancel')).toBeDisabled();
+    expect(screen.getByText('Saving…')).toBeInTheDocument();
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
   });
 });

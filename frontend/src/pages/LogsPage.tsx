@@ -89,7 +89,11 @@ export function LogsPage() {
   // Detail / form state
   const [detailId, setDetailId] = useState<number | null>(null);
   const [form, setForm] = useState<LogFormState | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const scrolled = useScrolled();
 
@@ -105,8 +109,13 @@ export function LogsPage() {
     setQuery('');
   }, []);
 
+  const openForm = useCallback((state: LogFormState) => {
+    setSaveError(null);
+    setForm(state);
+  }, []);
+
   const openEdit = useCallback((log: PastLog) => {
-    setForm({
+    openForm({
       title: 'Edit log',
       editId: log.id,
       seed: {
@@ -121,10 +130,10 @@ export function LogsPage() {
         date_logged: log.date_logged.split('T')[0],
       },
     });
-  }, []);
+  }, [openForm]);
 
   const openBrewAgain = useCallback((log: PastLog) => {
-    setForm({
+    openForm({
       title: 'New log',
       editId: null,
       seed: {
@@ -134,27 +143,41 @@ export function LogsPage() {
         roasting_notes: log.roasting_notes,
       },
     });
-  }, []);
+  }, [openForm]);
 
   const handleSave = useCallback((input: PastLogInput) => {
     const editId = form?.editId ?? null;
+    setSaving(true);
+    setSaveError(null);
     const request = editId != null ? updatePastLog(editId, input) : createPastLog(input);
-    request.then(saved => {
-      if (!saved) return;
-      setLogs(prev => (editId != null ? prev.map(l => (l.id === saved.id ? saved : l)) : [saved, ...prev]));
-    });
-    setForm(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    request
+      .then(saved => {
+        if (!saved) return;
+        setLogs(prev => (editId != null ? prev.map(l => (l.id === saved.id ? saved : l)) : [saved, ...prev]));
+        setForm(null);
+      })
+      .catch(err => setSaveError((err as Error).message ?? 'Failed to save log'))
+      .finally(() => setSaving(false));
   }, [form]);
+
+  const openDeleteConfirm = useCallback((id: number) => {
+    setDeleteError(null);
+    setPendingDeleteId(id);
+  }, []);
 
   const handleDelete = useCallback(() => {
     if (pendingDeleteId == null) return;
     const id = pendingDeleteId;
-    deletePastLog(id).then(() => {
-      setLogs(prev => prev.filter(l => l.id !== id));
-    });
-    setPendingDeleteId(null);
-    setDetailId(null);
+    setDeleting(true);
+    setDeleteError(null);
+    deletePastLog(id)
+      .then(() => {
+        setLogs(prev => prev.filter(l => l.id !== id));
+        setPendingDeleteId(null);
+        setDetailId(null);
+      })
+      .catch(err => setDeleteError((err as Error).message ?? 'Failed to delete log'))
+      .finally(() => setDeleting(false));
   }, [pendingDeleteId]);
 
   // ---------------------------------------------------------------------------
@@ -269,7 +292,7 @@ export function LogsPage() {
         <Fab
           color="primary"
           aria-label="New log"
-          onClick={() => setForm({ title: 'New log', editId: null, seed: {} })}
+          onClick={() => openForm({ title: 'New log', editId: null, seed: {} })}
           sx={{
             position: 'fixed',
             bottom: 24,
@@ -316,7 +339,7 @@ export function LogsPage() {
           onOpenSibling={id => setDetailId(id)}
           onBrewAgain={() => openBrewAgain(detailLog)}
           onEdit={() => openEdit(detailLog)}
-          onDelete={() => setPendingDeleteId(detailLog.id)}
+          onDelete={() => openDeleteConfirm(detailLog.id)}
         />
       )}
 
@@ -325,8 +348,11 @@ export function LogsPage() {
           title={form.title}
           seed={form.seed}
           knownBeans={knownBeans}
+          processOptions={processOptions}
           roastingMethods={roastingMethods}
           brewingMethods={brewingMethods}
+          saving={saving}
+          error={saveError}
           onCancel={() => setForm(null)}
           onSave={handleSave}
         />
@@ -336,6 +362,8 @@ export function LogsPage() {
         open={pendingDeleteId != null}
         title="Delete this log?"
         message="This can't be undone."
+        loading={deleting}
+        error={deleteError}
         onConfirm={handleDelete}
         onCancel={() => setPendingDeleteId(null)}
       />
