@@ -61,7 +61,12 @@ function MultiPanel({ title, options, sel, onToggle, onBack }: MultiPanelProps) 
         <IconButton onClick={onBack} aria-label="Back" size="small">
           <ArrowBackIcon />
         </IconButton>
-        <Typography variant="subtitle1" fontWeight={600} sx={{ ml: 1 }}>
+        <Typography
+          variant="subtitle1"
+          sx={{
+            fontWeight: 600,
+            ml: 1
+          }}>
           {title}
         </Typography>
       </Box>
@@ -129,12 +134,23 @@ function FilterRoot({
   return (
     <>
       <Box sx={{ flex: 1, overflow: 'auto', px: 2, pt: 1.5 }}>
-        <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1.5 }}>
+        <Typography
+          variant="subtitle1"
+          sx={{
+            fontWeight: 600,
+            mb: 1.5
+          }}>
           Filter
         </Typography>
 
         {/* Rating — inline 0–5 boxes ("n & up") */}
-        <Typography variant="body2" color="text.secondary" fontWeight={500} sx={{ mb: 1 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            fontWeight: 500,
+            mb: 1
+          }}>
           Rating
         </Typography>
         <Box sx={{ display: 'flex', gap: 0.75, mb: 0.75 }}>
@@ -171,7 +187,13 @@ function FilterRoot({
             );
           })}
         </Box>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            display: 'block',
+            mb: 2
+          }}>
           {ratingCaption(ratingMin)}
         </Typography>
 
@@ -201,7 +223,6 @@ function FilterRoot({
           onClick={() => onNavigate('brewing')}
         />
       </Box>
-
       <Box
         sx={{
           display: 'flex',
@@ -254,8 +275,10 @@ function FilterRow({ label, value, active, onClick }: FilterRowProps) {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
         <Typography
           variant="body2"
-          color={active ? 'primary.main' : 'text.secondary'}
-          fontWeight={active ? 500 : 400}
+          sx={{
+            color: active ? 'primary.main' : 'text.secondary',
+            fontWeight: active ? 500 : 400,
+          }}
         >
           {value}
         </Typography>

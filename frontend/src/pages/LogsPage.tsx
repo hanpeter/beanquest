@@ -235,7 +235,6 @@ export function LogsPage() {
         summaryText={summary}
         onClearAll={clearAll}
       />
-
       <Container
         maxWidth={false}
         sx={{ maxWidth: CONTENT_MAX_WIDTH, px: 0 }}
@@ -254,10 +253,14 @@ export function LogsPage() {
 
         {!loading && !error && beans.length === 0 && (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', pt: 8, gap: 1, px: 4 }}>
-            <Typography variant="h6" color="text.secondary">
+            <Typography variant="h6" sx={{
+              color: "text.secondary"
+            }}>
               No logs match
             </Typography>
-            <Typography variant="body2" color="text.secondary" align="center">
+            <Typography variant="body2" align="center" sx={{
+              color: "text.secondary"
+            }}>
               Try clearing a filter or searching another bean.
             </Typography>
           </Box>
@@ -298,7 +301,6 @@ export function LogsPage() {
           </Box>
         ))}
       </Container>
-
       {/* Add-log entry point — hidden while the form or detail panel is open */}
       {!form && !detailLog && (
         <Fab
@@ -316,10 +318,8 @@ export function LogsPage() {
           {wide && 'New log'}
         </Fab>
       )}
-
       {/* Overlays */}
       <NavDrawer open={drawer} onClose={() => setDrawer(false)} />
-
       <FilterSheet
         panel={filterPanel}
         onNavigate={setFilterPanel}
@@ -337,14 +337,12 @@ export function LogsPage() {
         roastingOptions={roastingOptions}
         brewingOptions={brewingOptions}
       />
-
       <SortSheet
         open={sortOpen}
         sort={sort}
         onSort={setSort}
         onClose={() => setSortOpen(false)}
       />
-
       {detailLog && (
         <LogDetail
           log={detailLog}
@@ -356,7 +354,6 @@ export function LogsPage() {
           onDelete={() => openDeleteConfirm(detailLog.id)}
         />
       )}
-
       {form && (
         <LogForm
           title={form.title}
@@ -371,7 +368,6 @@ export function LogsPage() {
           onSave={handleSave}
         />
       )}
-
       <ConfirmDialog
         open={pendingDeleteId != null}
         title="Delete this log?"
