@@ -103,11 +103,15 @@ export function AppHeader({
         ) : (
           <>
             <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 0.5, pl: 0.5 }}>
-              <Typography variant="subtitle1" fontWeight={700} component="span">
+              <Typography variant="subtitle1" component="span" sx={{
+                fontWeight: 700
+              }}>
                 BeanQuest
               </Typography>
               <ChevronRightIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-              <Typography variant="subtitle1" color="text.secondary" component="span">
+              <Typography variant="subtitle1" component="span" sx={{
+                color: "text.secondary"
+              }}>
                 Logs
               </Typography>
             </Box>
@@ -123,7 +127,6 @@ export function AppHeader({
           </>
         )}
       </Toolbar>
-
       {/* Row 2: filter + sort toolbar */}
       <Box
         sx={{
@@ -189,7 +192,6 @@ export function AppHeader({
           <span>Sort: {sortLabel}</span>
         </Box>
       </Box>
-
       {/* Row 3: applied-filters summary (only when ≥1 filter active) */}
       {activeCount > 0 && (
         <Box
@@ -207,10 +209,12 @@ export function AppHeader({
         >
           <Typography
             variant="caption"
-            color="text.secondary"
             noWrap
-            sx={{ flex: 1, minWidth: 0 }}
-          >
+            sx={{
+              color: "text.secondary",
+              flex: 1,
+              minWidth: 0
+            }}>
             {summaryText}
           </Typography>
           <Box

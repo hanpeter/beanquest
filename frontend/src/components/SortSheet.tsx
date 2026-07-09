@@ -34,11 +34,16 @@ export function SortSheet({ open, sort, onSort, onClose }: SortSheetProps) {
       <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1.5, pb: 0.5 }}>
         <Box sx={{ width: 32, height: 4, borderRadius: 2, bgcolor: 'divider' }} />
       </Box>
-
-      <Typography variant="subtitle1" fontWeight={600} sx={{ px: 2, pt: 1, pb: 0.5 }}>
+      <Typography
+        variant="subtitle1"
+        sx={{
+          fontWeight: 600,
+          px: 2,
+          pt: 1,
+          pb: 0.5
+        }}>
         Sort by
       </Typography>
-
       <List disablePadding sx={{ pb: 2 }}>
         {SORT_OPTIONS.map(({ key, label }) => (
           <ListItemButton
@@ -46,7 +51,7 @@ export function SortSheet({ open, sort, onSort, onClose }: SortSheetProps) {
             onClick={() => { onSort(key); onClose(); }}
             sx={{ px: 2, py: 1.25 }}
           >
-            <ListItemText primary={label} primaryTypographyProps={{ variant: 'body1' }} />
+            <ListItemText primary={label} slotProps={{ primary: { variant: 'body1' } }} />
             {sort === key && <CheckIcon fontSize="small" sx={{ color: 'primary.main', ml: 1 }} />}
           </ListItemButton>
         ))}

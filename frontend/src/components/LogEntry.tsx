@@ -32,7 +32,9 @@ export function LogEntry({ log, onClick }: LogEntryProps) {
         {/* Line 1: rating + date */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
           <Stars score={log.rating_score} />
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             {fmtDate(log.date_logged)}
           </Typography>
         </Box>
@@ -42,9 +44,11 @@ export function LogEntry({ log, onClick }: LogEntryProps) {
           <LocalFireDepartmentIcon sx={facetIconSx} />
           <Typography
             variant="body2"
-            color="text.secondary"
             className="line-clamp-1"
             title={`${log.roasting_method_name} · ${log.roasting_notes}`}
+            sx={{
+              color: "text.secondary"
+            }}
           >
             {log.roasting_method_name} · {log.roasting_notes}
           </Typography>
@@ -53,7 +57,9 @@ export function LogEntry({ log, onClick }: LogEntryProps) {
         {/* Line 3: brew */}
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mb: 0.25 }}>
           <LocalCafeIcon sx={facetIconSx} />
-          <Typography variant="body2" color="text.secondary" noWrap>
+          <Typography variant="body2" noWrap sx={{
+            color: "text.secondary"
+          }}>
             {log.brewing_method_name} · {log.grinder_setting}
           </Typography>
         </Box>
@@ -64,11 +70,12 @@ export function LogEntry({ log, onClick }: LogEntryProps) {
             <NotesIcon sx={facetIconSx} />
             <Typography
               variant="body2"
-              color="text.secondary"
               className="line-clamp-1"
               title={log.general_notes}
-              sx={{ fontStyle: 'italic' }}
-            >
+              sx={{
+                color: "text.secondary",
+                fontStyle: 'italic'
+              }}>
               {log.general_notes}
             </Typography>
           </Box>

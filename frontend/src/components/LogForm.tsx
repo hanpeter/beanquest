@@ -120,10 +120,20 @@ interface FieldProps {
 function Field({ label, required, children }: FieldProps) {
   return (
     <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-      <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>
+      <Typography
+        variant="body2"
+        sx={{
+          fontWeight: 500,
+          mb: 1
+        }}>
         {label}
         {required && (
-          <Typography component="span" color="error.main" sx={{ ml: 0.5 }}>
+          <Typography
+            component="span"
+            sx={{
+              color: "error.main",
+              ml: 0.5
+            }}>
             *
           </Typography>
         )}
@@ -214,7 +224,9 @@ export function LogForm({
           >
             Cancel
           </Box>
-          <Typography variant="subtitle1" fontWeight={600}>
+          <Typography variant="subtitle1" sx={{
+            fontWeight: 600
+          }}>
             {title}
           </Typography>
           <Box
@@ -257,7 +269,13 @@ export function LogForm({
                 <TextField {...params} placeholder="Start typing… e.g. Guatemala" size="small" />
               )}
             />
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                display: 'block',
+                mt: 0.75
+              }}>
               Pick an existing bean to carry its process over, or keep typing to add a new one.
             </Typography>
           </Field>
@@ -321,7 +339,9 @@ export function LogForm({
           <Field label="Rating" required>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <StarPicker value={rating} onChange={setRating} />
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 {rating == null ? 'Tap to rate' : `${rating} / 5`}
               </Typography>
             </Box>
@@ -339,7 +359,12 @@ export function LogForm({
           </Field>
 
           <Box sx={{ px: 2, py: 1.5 }}>
-            <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 500,
+                mb: 1
+              }}>
               Date logged
             </Typography>
             <TextField
