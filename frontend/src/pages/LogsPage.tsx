@@ -19,7 +19,7 @@ import type {
   BrewingMethod,
   SortKey,
 } from '../types';
-import { SORT_LABEL } from '../constants';
+import { SORT_LABEL, CONTENT_MAX_WIDTH, CONTENT_WIDTH_PCT } from '../constants';
 import {
   activeCount,
   distinctBeans,
@@ -31,6 +31,7 @@ import {
   summaryParts,
 } from '../logic/logs';
 import { useScrolled } from '../hooks/useScrolled';
+import { useWideLayout } from '../hooks/useWideLayout';
 import { AppHeader } from '../components/AppHeader';
 import { LogEntry } from '../components/LogEntry';
 import { NavDrawer } from '../components/NavDrawer';
@@ -39,6 +40,16 @@ import { SortSheet } from '../components/SortSheet';
 import { LogForm } from '../components/LogForm';
 import { LogDetail } from '../components/LogDetail';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+
+// FAB `right` offset, derived from CONTENT_WIDTH_PCT so the two can't drift apart.
+// At full-bleed breakpoints (gap 0) this simplifies to a flat 24px, same as the
+// max() floor, so no special-casing is needed.
+const FAB_RIGHT = Object.fromEntries(
+  Object.entries(CONTENT_WIDTH_PCT).map(([bp, pct]) => {
+    const gapVw = (100 - pct) / 2;
+    return [bp, `max(24px, calc(${gapVw}vw + 24px))`];
+  }),
+) as Record<keyof typeof CONTENT_WIDTH_PCT, string>;
 
 export function LogsPage() {
   // ---------------------------------------------------------------------------
@@ -96,6 +107,7 @@ export function LogsPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const scrolled = useScrolled();
+  const wide = useWideLayout();
 
   const clearAll = useCallback(() => {
     setRatingMin(null);
@@ -226,7 +238,7 @@ export function LogsPage() {
 
       <Container
         maxWidth={false}
-        sx={{ maxWidth: 460, px: 0 }}
+        sx={{ maxWidth: CONTENT_MAX_WIDTH, px: 0 }}
       >
         {loading && (
           <Box sx={{ display: 'flex', justifyContent: 'center', pt: 8 }}>
@@ -291,15 +303,17 @@ export function LogsPage() {
       {!form && !detailLog && (
         <Fab
           color="primary"
+          variant={wide ? 'extended' : 'circular'}
           aria-label="New log"
           onClick={() => openForm({ title: 'New log', editId: null, seed: {} })}
           sx={{
             position: 'fixed',
             bottom: 24,
-            right: 'max(24px, calc((100vw - 460px) / 2 + 24px))',
+            right: FAB_RIGHT,
           }}
         >
-          <AddIcon />
+          <AddIcon sx={{ mr: wide ? 1 : 0 }} />
+          {wide && 'New log'}
         </Fab>
       )}
 

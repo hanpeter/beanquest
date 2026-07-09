@@ -1,4 +1,4 @@
-import { Box, Chip, Dialog, Divider, IconButton, Typography } from '@mui/material';
+import { Box, Chip, Dialog, Divider, IconButton, Typography, Button } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LocalCafeIcon from '@mui/icons-material/LocalCafe';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
@@ -9,6 +9,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import type { PastLog } from '../types';
 import { fmtLong } from '../logic/logs';
 import { Stars } from './Stars';
+import { useWideLayout } from '../hooks/useWideLayout';
+import { CONTENT_MAX_WIDTH } from '../constants';
 
 interface LogDetailProps {
   log: PastLog;
@@ -43,6 +45,8 @@ function Section({ icon, title, children }: SectionProps) {
 const sectionIconSx = { fontSize: 18, color: 'text.secondary' };
 
 export function LogDetail({ log, siblings, onBack, onOpenSibling, onBrewAgain, onEdit, onDelete }: LogDetailProps) {
+  const wide = useWideLayout();
+
   return (
     <Dialog fullScreen open onClose={onBack}>
       <Box
@@ -73,18 +77,35 @@ export function LogDetail({ log, siblings, onBack, onOpenSibling, onBrewAgain, o
           Logs
         </Box>
         <Box sx={{ flex: 1 }} />
-        <IconButton onClick={onBrewAgain} aria-label="Brew again" title="Brew again">
-          <ReplayIcon />
-        </IconButton>
-        <IconButton onClick={onEdit} aria-label="Edit" title="Edit">
-          <EditIcon />
-        </IconButton>
-        <IconButton onClick={onDelete} aria-label="Delete" title="Delete">
-          <DeleteIcon />
-        </IconButton>
+        {wide ? (
+          <>
+            <Button onClick={onBrewAgain} startIcon={<ReplayIcon />} color="inherit" title="Brew again" sx={{ textTransform: 'none' }}>
+              Brew again
+            </Button>
+            <Button onClick={onEdit} startIcon={<EditIcon />} color="inherit" title="Edit" sx={{ textTransform: 'none' }}>
+              Edit
+            </Button>
+            <Button onClick={onDelete} startIcon={<DeleteIcon />} color="inherit" title="Delete" sx={{ textTransform: 'none' }}>
+              Delete
+            </Button>
+          </>
+        ) : (
+          <>
+            <IconButton onClick={onBrewAgain} aria-label="Brew again" title="Brew again">
+              <ReplayIcon />
+            </IconButton>
+            <IconButton onClick={onEdit} aria-label="Edit" title="Edit">
+              <EditIcon />
+            </IconButton>
+            <IconButton onClick={onDelete} aria-label="Delete" title="Delete">
+              <DeleteIcon />
+            </IconButton>
+          </>
+        )}
       </Box>
 
       <Box sx={{ flex: 1, overflow: 'auto' }}>
+      <Box sx={{ maxWidth: CONTENT_MAX_WIDTH, mx: 'auto' }}>
         <Box sx={{ px: 2, py: 2 }}>
           <Typography variant="h5" fontWeight={700}>
             {log.bean_name}
@@ -165,6 +186,7 @@ export function LogDetail({ log, siblings, onBack, onOpenSibling, onBrewAgain, o
             ))}
           </Box>
         )}
+      </Box>
       </Box>
     </Dialog>
   );
