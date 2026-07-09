@@ -13,7 +13,7 @@ RUN npm run build
 FROM python:3.13-slim AS backend-builder
 
 ENV POETRY_NO_INTERACTION=1 \
-    POETRY_VIRTUALENVS_IN_PROJECT=1 \
+    POETRY_VIRTUALENVS_CREATE=false \
     POETRY_NO_CACHE=1 \
     PATH="/opt/poetry/bin:$PATH"
 RUN python3 -m venv /opt/poetry && \
@@ -27,21 +27,18 @@ RUN poetry install --without dev --no-root
 COPY beanquest/ ./beanquest/
 COPY README.md ./
 
-RUN poetry install --without dev
-
-# Fix Python symlinks to match distroless Python path
-RUN rm -f /beanquest/.venv/bin/python* && \
-    ln -s /usr/bin/python /beanquest/.venv/bin/python && \
-    ln -s /usr/bin/python /beanquest/.venv/bin/python3 && \
-    ln -s /usr/bin/python /beanquest/.venv/bin/python3.13
+RUN poetry build -f wheel && \
+    /usr/local/bin/pip install --no-cache-dir dist/*.whl
 
 FROM gcr.io/distroless/python3-debian13 AS runtime
 
 WORKDIR /beanquest
 
-COPY --from=backend-builder /beanquest/.venv /beanquest/.venv
-COPY --from=backend-builder /beanquest/beanquest /beanquest/beanquest
-COPY --from=frontend-builder /beanquest/static/ /beanquest/beanquest/static/
+COPY --from=backend-builder /usr/local/lib/python3.13/site-packages/ ./
+COPY --from=frontend-builder /beanquest/static/ ./beanquest/static/
+
+ENV PYTHONPATH=/beanquest \
+    PYTHONUNBUFFERED=1
 
 EXPOSE 8000
-ENTRYPOINT ["/beanquest/.venv/bin/uvicorn", "beanquest.api:app", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["python", "-m", "uvicorn", "beanquest.api:app", "--host", "0.0.0.0", "--port", "8000"]
