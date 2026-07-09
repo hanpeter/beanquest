@@ -1,13 +1,32 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Box, Chip, CircularProgress, Container, Typography } from '@mui/material';
-import { getPastLogs, getRoastingMethods, getBrewingMethods } from '../api';
-import type { FilterPanel, Filters, PastLog, RoastingMethod, BrewingMethod, SortKey } from '../types';
+import { Alert, Box, Chip, CircularProgress, Container, Fab, Typography } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import {
+  getPastLogs,
+  getRoastingMethods,
+  getBrewingMethods,
+  createPastLog,
+  updatePastLog,
+  deletePastLog,
+} from '../api';
+import type {
+  FilterPanel,
+  Filters,
+  LogFormState,
+  PastLog,
+  PastLogInput,
+  RoastingMethod,
+  BrewingMethod,
+  SortKey,
+} from '../types';
 import { SORT_LABEL } from '../constants';
 import {
   activeCount,
+  distinctBeans,
   distinctProcesses,
   filterLogs,
   groupByBean,
+  siblingLogs,
   sortLogs,
   summaryParts,
 } from '../logic/logs';
@@ -17,6 +36,9 @@ import { LogEntry } from '../components/LogEntry';
 import { NavDrawer } from '../components/NavDrawer';
 import { FilterSheet } from '../components/FilterSheet';
 import { SortSheet } from '../components/SortSheet';
+import { LogForm } from '../components/LogForm';
+import { LogDetail } from '../components/LogDetail';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 export function LogsPage() {
   // ---------------------------------------------------------------------------
@@ -64,6 +86,11 @@ export function LogsPage() {
   const [brewSel, setBrewSel] = useState<string[]>([]);
   const [sort, setSort] = useState<SortKey>('date-desc');
 
+  // Detail / form state
+  const [detailId, setDetailId] = useState<number | null>(null);
+  const [form, setForm] = useState<LogFormState | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+
   const scrolled = useScrolled();
 
   const clearAll = useCallback(() => {
@@ -77,6 +104,58 @@ export function LogsPage() {
     setSearchOpen(false);
     setQuery('');
   }, []);
+
+  const openEdit = useCallback((log: PastLog) => {
+    setForm({
+      title: 'Edit log',
+      editId: log.id,
+      seed: {
+        bean_name: log.bean_name,
+        process: log.process,
+        roasting_method_id: log.roasting_method_id,
+        roasting_notes: log.roasting_notes,
+        brewing_method_id: log.brewing_method_id,
+        grinder_setting: log.grinder_setting,
+        rating_score: log.rating_score,
+        general_notes: log.general_notes,
+        date_logged: log.date_logged.split('T')[0],
+      },
+    });
+  }, []);
+
+  const openBrewAgain = useCallback((log: PastLog) => {
+    setForm({
+      title: 'New log',
+      editId: null,
+      seed: {
+        bean_name: log.bean_name,
+        process: log.process,
+        roasting_method_id: log.roasting_method_id,
+        roasting_notes: log.roasting_notes,
+      },
+    });
+  }, []);
+
+  const handleSave = useCallback((input: PastLogInput) => {
+    const editId = form?.editId ?? null;
+    const request = editId != null ? updatePastLog(editId, input) : createPastLog(input);
+    request.then(saved => {
+      if (!saved) return;
+      setLogs(prev => (editId != null ? prev.map(l => (l.id === saved.id ? saved : l)) : [saved, ...prev]));
+    });
+    setForm(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form]);
+
+  const handleDelete = useCallback(() => {
+    if (pendingDeleteId == null) return;
+    const id = pendingDeleteId;
+    deletePastLog(id).then(() => {
+      setLogs(prev => prev.filter(l => l.id !== id));
+    });
+    setPendingDeleteId(null);
+    setDetailId(null);
+  }, [pendingDeleteId]);
 
   // ---------------------------------------------------------------------------
   // Derived state
@@ -92,10 +171,14 @@ export function LogsPage() {
   const processOptions = useMemo(() => distinctProcesses(logs), [logs]);
   const roastingOptions = useMemo(() => roastingMethods.map(r => r.roaster_name), [roastingMethods]);
   const brewingOptions = useMemo(() => brewingMethods.map(b => b.method_name), [brewingMethods]);
+  const knownBeans = useMemo(() => distinctBeans(logs), [logs]);
 
   const count = activeCount(filters);
   const summary = summaryParts(filters).join(' · ');
   const sortLabel = SORT_LABEL[sort];
+
+  const detailLog = logs.find(l => l.id === detailId) ?? null;
+  const siblings = detailLog ? siblingLogs(logs, detailLog) : [];
 
   // ---------------------------------------------------------------------------
   // Render
@@ -174,14 +257,28 @@ export function LogsPage() {
               <LogEntry
                 key={log.id}
                 log={log}
-                onClick={() => {
-                  // navigate to detail page — not built in this sprint
-                }}
+                onClick={() => setDetailId(log.id)}
               />
             ))}
           </Box>
         ))}
       </Container>
+
+      {/* Add-log entry point — hidden while the form or detail panel is open */}
+      {!form && !detailLog && (
+        <Fab
+          color="primary"
+          aria-label="New log"
+          onClick={() => setForm({ title: 'New log', editId: null, seed: {} })}
+          sx={{
+            position: 'fixed',
+            bottom: 24,
+            right: 'max(24px, calc((100vw - 460px) / 2 + 24px))',
+          }}
+        >
+          <AddIcon />
+        </Fab>
+      )}
 
       {/* Overlays */}
       <NavDrawer open={drawer} onClose={() => setDrawer(false)} />
@@ -209,6 +306,38 @@ export function LogsPage() {
         sort={sort}
         onSort={setSort}
         onClose={() => setSortOpen(false)}
+      />
+
+      {detailLog && (
+        <LogDetail
+          log={detailLog}
+          siblings={siblings}
+          onBack={() => setDetailId(null)}
+          onOpenSibling={id => setDetailId(id)}
+          onBrewAgain={() => openBrewAgain(detailLog)}
+          onEdit={() => openEdit(detailLog)}
+          onDelete={() => setPendingDeleteId(detailLog.id)}
+        />
+      )}
+
+      {form && (
+        <LogForm
+          title={form.title}
+          seed={form.seed}
+          knownBeans={knownBeans}
+          roastingMethods={roastingMethods}
+          brewingMethods={brewingMethods}
+          onCancel={() => setForm(null)}
+          onSave={handleSave}
+        />
+      )}
+
+      <ConfirmDialog
+        open={pendingDeleteId != null}
+        title="Delete this log?"
+        message="This can't be undone."
+        onConfirm={handleDelete}
+        onCancel={() => setPendingDeleteId(null)}
       />
     </Box>
   );

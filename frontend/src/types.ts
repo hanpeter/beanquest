@@ -48,3 +48,29 @@ export interface Filters {
 }
 
 export type FilterPanel = 'filter' | 'process' | 'roasting' | 'brewing';
+
+/** Payload for creating/updating a PastLog — mirrors the backend's writable fields. */
+export interface PastLogInput {
+  bean_name: string;
+  process: string;
+  roasting_method_id: number;
+  brewing_method_id: number;
+  roasting_notes: string;
+  grinder_setting: string;
+  rating_score: number;
+  general_notes: string;
+  date_logged: string;
+}
+
+/** Bean name + its most recently seen process, used for the New Log form's typeahead. */
+export interface KnownBean {
+  bean: string;
+  process: string;
+}
+
+/** New/edit/brew-again form state, held by LogsPage. */
+export interface LogFormState {
+  title: string;
+  editId: number | null;
+  seed: Partial<PastLogInput>;
+}

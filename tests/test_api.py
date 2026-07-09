@@ -276,6 +276,15 @@ def test_create_past_log(client):
     assert r.json()['id'] == 1
 
 
+def test_create_past_log_passes_date_logged(client):
+    c, mock = client
+    mock.add_past_log.return_value = _log()
+    r = c.post('/api/v1/past-logs', json={**_LOG_BODY, 'date_logged': '2026-01-15'})
+    assert r.status_code == 201
+    created = mock.add_past_log.call_args[0][0]
+    assert created.date_logged.isoformat() == '2026-01-15T00:00:00'
+
+
 def test_create_past_log_missing_required(client):
     c, _ = client
     r = c.post('/api/v1/past-logs', json={})

@@ -182,7 +182,7 @@ def test_past_log_extra_field_rejected():
 def test_past_log_server_fields():
     assert 'brewing_method_name' in PastLog.SERVER_FIELDS
     assert 'roasting_method_name' in PastLog.SERVER_FIELDS
-    assert 'date_logged' in PastLog.SERVER_FIELDS
+    assert 'date_logged' not in PastLog.SERVER_FIELDS
 
 
 def test_past_log_joined_fields_subset_of_server_fields():
@@ -212,6 +212,15 @@ def test_past_log_select_one_has_where():
 def test_past_log_insert_references_table():
     assert 'past_logs' in PastLog.INSERT
     assert 'rating_score' in PastLog.INSERT
+
+
+def test_past_log_insert_coalesces_date_logged():
+    assert 'date_logged' in PastLog.INSERT
+    assert 'COALESCE(%(date_logged)s, now())' in PastLog.INSERT
+
+
+def test_past_log_update_coalesces_date_logged():
+    assert 'COALESCE(%(date_logged)s, date_logged)' in PastLog.UPDATE
 
 
 def test_past_log_delete_sql():

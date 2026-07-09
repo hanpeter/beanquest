@@ -34,11 +34,12 @@ class PastLog(BaseModel):
         INSERT INTO past_logs (
             bean_name, process, target_roast_level,
             roasting_method_id, brewing_method_id,
-            roasting_notes, grinder_setting, rating_score, general_notes
+            roasting_notes, grinder_setting, rating_score, general_notes, date_logged
         ) VALUES (
             %(bean_name)s, %(process)s, %(target_roast_level)s,
             %(roasting_method_id)s, %(brewing_method_id)s,
-            %(roasting_notes)s, %(grinder_setting)s, %(rating_score)s, %(general_notes)s
+            %(roasting_notes)s, %(grinder_setting)s, %(rating_score)s, %(general_notes)s,
+            COALESCE(%(date_logged)s, now())
         ) RETURNING id
     ''')
     UPDATE: ClassVar[str] = dedent('''\
@@ -51,12 +52,13 @@ class PastLog(BaseModel):
             roasting_notes = %(roasting_notes)s,
             grinder_setting = %(grinder_setting)s,
             rating_score = %(rating_score)s,
-            general_notes = %(general_notes)s
+            general_notes = %(general_notes)s,
+            date_logged = COALESCE(%(date_logged)s, date_logged)
         WHERE id = %(id)s
     ''')
     DELETE: ClassVar[str] = 'DELETE FROM past_logs WHERE id = %s'
     SERVER_FIELDS: ClassVar[frozenset[str]] = frozenset({
-        'brewing_method_name', 'roasting_method_name', 'date_logged',
+        'brewing_method_name', 'roasting_method_name',
     })
     _JOINED_FIELDS: ClassVar[frozenset[str]] = frozenset({
         'brewing_method_name', 'roasting_method_name',

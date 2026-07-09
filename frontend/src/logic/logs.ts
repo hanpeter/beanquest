@@ -1,12 +1,23 @@
-import type { PastLog, BeanGroup, Filters, SortKey } from '../types';
+import type { PastLog, BeanGroup, Filters, SortKey, KnownBean } from '../types';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS_FULL = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
 
 /** Format an ISO date string (with or without time component) as "Mon D" */
 export function fmtDate(iso: string): string {
   const datePart = iso.split('T')[0];
   const [, m, d] = datePart.split('-').map(Number);
   return `${MONTHS[m - 1]} ${d}`;
+}
+
+/** Format an ISO date string (with or without time component) as "Month D, YYYY" */
+export function fmtLong(iso: string): string {
+  const datePart = iso.split('T')[0];
+  const [y, m, d] = datePart.split('-').map(Number);
+  return `${MONTHS_FULL[m - 1]} ${d}, ${y}`;
 }
 
 /** Number of active filter categories (drives the toolbar badge) */
@@ -74,4 +85,23 @@ export function groupByBean(logs: PastLog[]): BeanGroup[] {
 /** Sorted unique process values from the log set (used to populate the Process filter options) */
 export function distinctProcesses(logs: PastLog[]): string[] {
   return [...new Set(logs.map(l => l.process))].sort();
+}
+
+/**
+ * First-appearance-unique bean → process pairs, used for the New Log form's
+ * bean typeahead (picking a suggestion auto-fills its process).
+ */
+export function distinctBeans(logs: PastLog[]): KnownBean[] {
+  const map = new Map<string, KnownBean>();
+  for (const l of logs) {
+    if (!map.has(l.bean_name)) {
+      map.set(l.bean_name, { bean: l.bean_name, process: l.process });
+    }
+  }
+  return [...map.values()];
+}
+
+/** Other logs of the same bean, excluding the given log itself — for "Other brews of this bean" */
+export function siblingLogs(logs: PastLog[], log: PastLog): PastLog[] {
+  return logs.filter(l => l.bean_name === log.bean_name && l.id !== log.id);
 }

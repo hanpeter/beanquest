@@ -1,11 +1,14 @@
 import {
   fmtDate,
+  fmtLong,
   activeCount,
   summaryParts,
   filterLogs,
   sortLogs,
   groupByBean,
   distinctProcesses,
+  distinctBeans,
+  siblingLogs,
 } from './logs';
 import type { PastLog, Filters } from '../types';
 
@@ -377,5 +380,69 @@ describe('distinctProcesses', () => {
       { ...LOGS[1], process: 'Washed' },
     ];
     expect(distinctProcesses(logs)).toEqual(['Washed']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fmtLong
+// ---------------------------------------------------------------------------
+describe('fmtLong', () => {
+  it('formats a date-only ISO string as "Month D, YYYY"', () => {
+    expect(fmtLong('2026-06-01')).toBe('June 1, 2026');
+  });
+
+  it('strips the time component', () => {
+    expect(fmtLong('2026-05-23T00:00:00')).toBe('May 23, 2026');
+  });
+
+  it('handles all months', () => {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
+    ];
+    months.forEach((m, i) => {
+      const mm = String(i + 1).padStart(2, '0');
+      expect(fmtLong(`2026-${mm}-15`)).toBe(`${m} 15, 2026`);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// distinctBeans
+// ---------------------------------------------------------------------------
+describe('distinctBeans', () => {
+  it('returns one entry per unique bean', () => {
+    const beans = distinctBeans(LOGS);
+    const names = beans.map(b => b.bean);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('takes process from the first-appearance log for that bean', () => {
+    const beans = distinctBeans(LOGS);
+    const ethiopia = beans.find(b => b.bean === 'Ethiopia Yirgacheffe')!;
+    // First Ethiopia log in LOGS array is id=4 (Natural)
+    expect(ethiopia.process).toBe('Natural');
+  });
+
+  it('returns empty array for empty input', () => {
+    expect(distinctBeans([])).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// siblingLogs
+// ---------------------------------------------------------------------------
+describe('siblingLogs', () => {
+  it('returns other logs of the same bean, excluding itself', () => {
+    const target = LOGS.find(l => l.id === 1)!;
+    const siblings = siblingLogs(LOGS, target);
+    expect(siblings.every(l => l.bean_name === target.bean_name)).toBe(true);
+    expect(siblings.some(l => l.id === target.id)).toBe(false);
+    expect(siblings).toHaveLength(1);
+  });
+
+  it('returns empty array when the bean has no other logs', () => {
+    const target = LOGS.find(l => l.id === 3)!; // Kenya Nyeri AA — single log
+    expect(siblingLogs(LOGS, target)).toEqual([]);
   });
 });

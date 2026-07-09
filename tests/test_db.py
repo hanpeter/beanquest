@@ -312,6 +312,33 @@ def test_add_past_log_acquires_pool(make_pool):
     assert 'roasting_method_name' not in params
 
 
+def test_add_past_log_passes_explicit_date_logged(make_pool):
+    pool = make_pool(fetchone_val=(12,))
+    db = Database(pool)
+    model = PastLog(
+        bean_name='Kenya', process='Washed',
+        roasting_method_id=1, brewing_method_id=1,
+        grinder_setting='Step 10', rating_score=5,
+        date_logged='2026-01-15',
+    )
+    db.add_past_log(model)
+    _, params = pool.last_conn.last_cursor.calls[0]
+    assert params['date_logged'].isoformat() == '2026-01-15T00:00:00'
+
+
+def test_add_past_log_omits_date_logged_defers_to_db_default(make_pool):
+    pool = make_pool(fetchone_val=(13,))
+    db = Database(pool)
+    model = PastLog(
+        bean_name='Kenya', process='Washed',
+        roasting_method_id=1, brewing_method_id=1,
+        grinder_setting='Step 10', rating_score=5,
+    )
+    db.add_past_log(model)
+    _, params = pool.last_conn.last_cursor.calls[0]
+    assert params['date_logged'] is None
+
+
 def test_add_past_log_uses_existing_conn(make_pool, make_conn):
     pool = make_pool()
     conn = make_conn(fetchone_val=(11,))
@@ -341,6 +368,33 @@ def test_update_past_log_acquires_pool(make_pool):
     assert params['bean_name'] == 'Ethiopia'
     assert 'brewing_method_name' not in params
     assert 'roasting_method_name' not in params
+
+
+def test_update_past_log_passes_explicit_date_logged(make_pool):
+    pool = make_pool()
+    db = Database(pool)
+    model = PastLog(
+        id=3, bean_name='Ethiopia', process='Anaerobic',
+        roasting_method_id=1, brewing_method_id=1,
+        grinder_setting='Step 9', rating_score=3,
+        date_logged='2026-02-01',
+    )
+    db.update_past_log(model)
+    _, params = pool.last_conn.last_cursor.calls[0]
+    assert params['date_logged'].isoformat() == '2026-02-01T00:00:00'
+
+
+def test_update_past_log_omits_date_logged_preserves_existing(make_pool):
+    pool = make_pool()
+    db = Database(pool)
+    model = PastLog(
+        id=3, bean_name='Ethiopia', process='Anaerobic',
+        roasting_method_id=1, brewing_method_id=1,
+        grinder_setting='Step 9', rating_score=3,
+    )
+    db.update_past_log(model)
+    _, params = pool.last_conn.last_cursor.calls[0]
+    assert params['date_logged'] is None
 
 
 def test_update_past_log_uses_existing_conn(make_pool, make_conn):

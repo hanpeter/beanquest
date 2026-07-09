@@ -1,0 +1,309 @@
+import { useMemo, useState } from 'react';
+import {
+  Autocomplete,
+  Box,
+  Dialog,
+  TextField,
+  Typography,
+} from '@mui/material';
+import type { BrewingMethod, KnownBean, PastLogInput, RoastingMethod } from '../types';
+import { PROCESSES } from '../constants';
+
+interface LogFormProps {
+  title: string;
+  seed: Partial<PastLogInput>;
+  knownBeans: KnownBean[];
+  roastingMethods: RoastingMethod[];
+  brewingMethods: BrewingMethod[];
+  onCancel: () => void;
+  onSave: (input: PastLogInput) => void;
+}
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+interface PickChipProps<T> {
+  options: T[];
+  value: T | null;
+  label: (option: T) => string;
+  onSelect: (option: T) => void;
+}
+
+function PickRow<T>({ options, value, label, onSelect }: PickChipProps<T>) {
+  return (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+      {options.map((o, i) => {
+        const active = value === o;
+        return (
+          <Box
+            key={i}
+            component="button"
+            onClick={() => onSelect(o)}
+            sx={{
+              px: 1.5,
+              py: 0.75,
+              border: '1.5px solid',
+              borderColor: active ? 'primary.main' : 'divider',
+              bgcolor: active ? 'primary.main' : 'transparent',
+              color: active ? 'primary.contrastText' : 'text.primary',
+              cursor: 'pointer',
+              borderRadius: 4,
+              typography: 'body2',
+              fontWeight: 500,
+              '&:hover': { borderColor: 'primary.main' },
+            }}
+          >
+            {label(o)}
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
+
+interface StarPickerProps {
+  value: number | null;
+  onChange: (n: number) => void;
+}
+
+/**
+ * Custom star picker (not MUI's <Rating>): clicking the currently-set star must
+ * reset it to 0, but Rating is backed by native radio inputs, which never fire a
+ * change event when clicking an already-checked radio.
+ */
+function StarPicker({ value, onChange }: StarPickerProps) {
+  return (
+    <Box sx={{ display: 'flex', gap: 0.25 }}>
+      {[1, 2, 3, 4, 5].map(n => {
+        const on = value != null && n <= value;
+        return (
+          <Box
+            key={n}
+            component="button"
+            onClick={() => onChange(value === n ? 0 : n)}
+            aria-label={`Rate ${n}`}
+            aria-pressed={on}
+            sx={{
+              border: 0,
+              bgcolor: 'transparent',
+              cursor: 'pointer',
+              p: 0,
+              fontSize: '1.75rem',
+              lineHeight: 1,
+              color: on ? 'warning.main' : 'text.disabled',
+            }}
+          >
+            {on ? '★' : '☆'}
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
+
+interface FieldProps {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}
+
+function Field({ label, required, children }: FieldProps) {
+  return (
+    <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+      <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>
+        {label}
+        {required && (
+          <Typography component="span" color="error.main" sx={{ ml: 0.5 }}>
+            *
+          </Typography>
+        )}
+      </Typography>
+      {children}
+    </Box>
+  );
+}
+
+export function LogForm({
+  title,
+  seed,
+  knownBeans,
+  roastingMethods,
+  brewingMethods,
+  onCancel,
+  onSave,
+}: LogFormProps) {
+  const [bean, setBean] = useState(seed.bean_name ?? '');
+  const [process, setProcess] = useState(seed.process ?? '');
+  const [roastingMethodId, setRoastingMethodId] = useState<number | null>(seed.roasting_method_id ?? null);
+  const [roastingNotes, setRoastingNotes] = useState(seed.roasting_notes ?? '');
+  const [brewingMethodId, setBrewingMethodId] = useState<number | null>(seed.brewing_method_id ?? null);
+  const [grinderSetting, setGrinderSetting] = useState(seed.grinder_setting ?? '');
+  const [rating, setRating] = useState<number | null>(seed.rating_score ?? null);
+  const [generalNotes, setGeneralNotes] = useState(seed.general_notes ?? '');
+  const [dateLogged, setDateLogged] = useState(seed.date_logged ?? today());
+
+  const beanOptions = useMemo(() => knownBeans.map(b => b.bean), [knownBeans]);
+
+  const pickBean = (name: string) => {
+    setBean(name);
+    const known = knownBeans.find(b => b.bean === name);
+    setProcess(known ? known.process : '');
+  };
+
+  const valid = bean.trim() && process && roastingMethodId != null && brewingMethodId != null && rating != null;
+
+  const save = () => {
+    if (!valid) return;
+    onSave({
+      bean_name: bean.trim(),
+      process,
+      roasting_method_id: roastingMethodId!,
+      brewing_method_id: brewingMethodId!,
+      roasting_notes: roastingNotes.trim(),
+      grinder_setting: grinderSetting.trim(),
+      rating_score: rating!,
+      general_notes: generalNotes.trim(),
+      date_logged: dateLogged,
+    });
+  };
+
+  return (
+    <Dialog fullScreen open onClose={onCancel}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          px: 2,
+          py: 1.5,
+          borderBottom: 1,
+          borderColor: 'divider',
+        }}
+      >
+        <Box
+          component="button"
+          onClick={onCancel}
+          sx={{ border: 0, bgcolor: 'transparent', cursor: 'pointer', typography: 'body1', color: 'text.primary' }}
+        >
+          Cancel
+        </Box>
+        <Typography variant="subtitle1" fontWeight={600}>
+          {title}
+        </Typography>
+        <Box
+          component="button"
+          onClick={save}
+          disabled={!valid}
+          sx={{
+            border: 0,
+            bgcolor: 'transparent',
+            cursor: valid ? 'pointer' : 'default',
+            typography: 'body1',
+            fontWeight: 600,
+            color: valid ? 'primary.main' : 'text.disabled',
+          }}
+        >
+          Save
+        </Box>
+      </Box>
+
+      <Box sx={{ flex: 1, overflow: 'auto' }}>
+        <Field label="Bean" required>
+          <Autocomplete
+            freeSolo
+            options={beanOptions}
+            inputValue={bean}
+            onInputChange={(_e, value, reason) => {
+              if (reason === 'input') pickBean(value);
+            }}
+            onChange={(_e, value) => {
+              if (value) pickBean(value);
+            }}
+            renderInput={params => (
+              <TextField {...params} placeholder="Start typing… e.g. Guatemala" size="small" />
+            )}
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
+            Pick an existing bean to carry its process over, or keep typing to add a new one.
+          </Typography>
+        </Field>
+
+        <Field label="Process" required>
+          <PickRow options={PROCESSES} value={process || null} label={p => p} onSelect={setProcess} />
+        </Field>
+
+        <Field label="Roasting method" required>
+          <PickRow
+            options={roastingMethods}
+            value={roastingMethods.find(r => r.id === roastingMethodId) ?? null}
+            label={r => r.roaster_name}
+            onSelect={r => setRoastingMethodId(r.id)}
+          />
+        </Field>
+
+        <Field label="Roasting notes">
+          <TextField
+            multiline
+            minRows={2}
+            fullWidth
+            placeholder="Time, first crack, heat/fan profile, stirring…"
+            value={roastingNotes}
+            onChange={e => setRoastingNotes(e.target.value)}
+          />
+        </Field>
+
+        <Field label="Brewing method" required>
+          <PickRow
+            options={brewingMethods}
+            value={brewingMethods.find(b => b.id === brewingMethodId) ?? null}
+            label={b => b.method_name}
+            onSelect={b => setBrewingMethodId(b.id)}
+          />
+        </Field>
+
+        <Field label="Grinder setting">
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="e.g. 20 clicks, Step 11"
+            value={grinderSetting}
+            onChange={e => setGrinderSetting(e.target.value)}
+          />
+        </Field>
+
+        <Field label="Rating" required>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <StarPicker value={rating} onChange={setRating} />
+            <Typography variant="body2" color="text.secondary">
+              {rating == null ? 'Tap to rate' : `${rating} / 5`}
+            </Typography>
+          </Box>
+        </Field>
+
+        <Field label="General notes">
+          <TextField
+            multiline
+            minRows={2}
+            fullWidth
+            placeholder="Tasting notes, what to change next time…"
+            value={generalNotes}
+            onChange={e => setGeneralNotes(e.target.value)}
+          />
+        </Field>
+
+        <Box sx={{ px: 2, py: 1.5 }}>
+          <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>
+            Date logged
+          </Typography>
+          <TextField
+            type="date"
+            size="small"
+            value={dateLogged}
+            onChange={e => setDateLogged(e.target.value)}
+          />
+        </Box>
+      </Box>
+    </Dialog>
+  );
+}
