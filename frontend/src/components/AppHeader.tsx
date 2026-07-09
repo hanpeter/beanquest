@@ -2,6 +2,7 @@ import {
   AppBar,
   Badge,
   Box,
+  Button,
   Divider,
   IconButton,
   InputBase,
@@ -14,6 +15,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import SortIcon from '@mui/icons-material/Sort';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { useWideLayout } from '../hooks/useWideLayout';
 
 interface AppHeaderProps {
   scrolled: boolean;
@@ -46,6 +48,8 @@ export function AppHeader({
   summaryText,
   onClearAll,
 }: AppHeaderProps) {
+  const wide = useWideLayout();
+
   return (
     <AppBar
       position="sticky"
@@ -107,9 +111,15 @@ export function AppHeader({
                 Logs
               </Typography>
             </Box>
-            <IconButton onClick={onSearchOpen} aria-label="Search" size="medium" sx={{ width: 40, height: 40 }}>
-              <SearchIcon />
-            </IconButton>
+            {wide ? (
+              <Button onClick={onSearchOpen} startIcon={<SearchIcon />} color="inherit" sx={{ textTransform: 'none' }}>
+                Search
+              </Button>
+            ) : (
+              <IconButton onClick={onSearchOpen} aria-label="Search" size="medium" sx={{ width: 40, height: 40 }}>
+                <SearchIcon />
+              </IconButton>
+            )}
           </>
         )}
       </Toolbar>

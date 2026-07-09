@@ -31,6 +31,7 @@ import {
   summaryParts,
 } from '../logic/logs';
 import { useScrolled } from '../hooks/useScrolled';
+import { useWideLayout } from '../hooks/useWideLayout';
 import { AppHeader } from '../components/AppHeader';
 import { LogEntry } from '../components/LogEntry';
 import { NavDrawer } from '../components/NavDrawer';
@@ -39,6 +40,21 @@ import { SortSheet } from '../components/SortSheet';
 import { LogForm } from '../components/LogForm';
 import { LogDetail } from '../components/LogDetail';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+
+// Responsive width of the centered content column, by MUI breakpoint.
+const CONTENT_MAX_WIDTH = { xs: '100%', sm: 600, md: 760, lg: 900 } as const;
+
+// FAB `right` offset, derived from CONTENT_MAX_WIDTH so the two can't drift apart.
+// `xs` is a flat 24px since the column is full-bleed ('100%') at that breakpoint.
+const FAB_RIGHT = {
+  xs: 24,
+  ...Object.fromEntries(
+    (['sm', 'md', 'lg'] as const).map(bp => [
+      bp,
+      `max(24px, calc((100vw - ${CONTENT_MAX_WIDTH[bp]}px) / 2 + 24px))`,
+    ]),
+  ),
+} as const;
 
 export function LogsPage() {
   // ---------------------------------------------------------------------------
@@ -96,6 +112,7 @@ export function LogsPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const scrolled = useScrolled();
+  const wide = useWideLayout();
 
   const clearAll = useCallback(() => {
     setRatingMin(null);
@@ -226,7 +243,7 @@ export function LogsPage() {
 
       <Container
         maxWidth={false}
-        sx={{ maxWidth: 460, px: 0 }}
+        sx={{ maxWidth: CONTENT_MAX_WIDTH, px: 0 }}
       >
         {loading && (
           <Box sx={{ display: 'flex', justifyContent: 'center', pt: 8 }}>
@@ -291,15 +308,17 @@ export function LogsPage() {
       {!form && !detailLog && (
         <Fab
           color="primary"
+          variant={wide ? 'extended' : 'circular'}
           aria-label="New log"
           onClick={() => openForm({ title: 'New log', editId: null, seed: {} })}
           sx={{
             position: 'fixed',
             bottom: 24,
-            right: 'max(24px, calc((100vw - 460px) / 2 + 24px))',
+            right: FAB_RIGHT,
           }}
         >
-          <AddIcon />
+          <AddIcon sx={{ mr: wide ? 1 : 0 }} />
+          {wide && 'New log'}
         </Fab>
       )}
 
