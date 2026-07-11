@@ -247,134 +247,134 @@ export function LogForm({
         </Box>
 
         <Box sx={{ flex: 1, overflow: 'auto' }}>
-        <Box sx={{ maxWidth: CONTENT_MAX_WIDTH, mx: 'auto' }}>
-          {error && (
-            <Alert severity="error" sx={{ m: 2 }}>
-              {error}
-            </Alert>
-          )}
+          <Box sx={{ maxWidth: CONTENT_MAX_WIDTH, mx: 'auto' }}>
+            {error && (
+              <Alert severity="error" sx={{ m: 2 }}>
+                {error}
+              </Alert>
+            )}
 
-          <Field label="Bean" required>
-            <Autocomplete
-              freeSolo
-              options={beanOptions}
-              inputValue={bean}
-              onInputChange={(_e, value, reason) => {
-                if (reason === 'input') pickBean(value);
-              }}
-              onChange={(_e, value) => {
-                if (value) pickBean(value);
-              }}
-              renderInput={params => (
-                <TextField {...params} placeholder="Start typing… e.g. Guatemala" size="small" />
-              )}
-            />
-            <Typography
-              variant="caption"
-              sx={{
-                color: "text.secondary",
-                display: 'block',
-                mt: 0.75
-              }}>
-              Pick an existing bean to carry its process over, or keep typing to add a new one.
-            </Typography>
-          </Field>
-
-          <Field label="Process" required>
-            <Autocomplete
-              freeSolo
-              options={processOptions}
-              inputValue={process}
-              onInputChange={(_e, value, reason) => {
-                if (reason === 'input') setProcess(value);
-              }}
-              onChange={(_e, value) => {
-                if (value) setProcess(value);
-              }}
-              renderInput={params => (
-                <TextField {...params} placeholder="Start typing… e.g. Washed" size="small" />
-              )}
-            />
-          </Field>
-
-          <Field label="Roasting method" required>
-            <PickRow
-              options={roastingMethods}
-              value={roastingMethods.find(r => r.id === roastingMethodId) ?? null}
-              label={r => r.roaster_name}
-              onSelect={r => setRoastingMethodId(r.id)}
-            />
-          </Field>
-
-          <Field label="Roasting notes">
-            <TextField
-              multiline
-              minRows={2}
-              fullWidth
-              placeholder="Time, first crack, heat/fan profile, stirring…"
-              value={roastingNotes}
-              onChange={e => setRoastingNotes(e.target.value)}
-            />
-          </Field>
-
-          <Field label="Brewing method" required>
-            <PickRow
-              options={brewingMethods}
-              value={brewingMethods.find(b => b.id === brewingMethodId) ?? null}
-              label={b => b.method_name}
-              onSelect={b => setBrewingMethodId(b.id)}
-            />
-          </Field>
-
-          <Field label="Grinder setting">
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="e.g. 20 clicks, Step 11"
-              value={grinderSetting}
-              onChange={e => setGrinderSetting(e.target.value)}
-            />
-          </Field>
-
-          <Field label="Rating" required>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <StarPicker value={rating} onChange={setRating} />
-              <Typography variant="body2" sx={{
-                color: "text.secondary"
-              }}>
-                {rating == null ? 'Tap to rate' : `${rating} / 5`}
+            <Field label="Bean" required>
+              <Autocomplete
+                freeSolo
+                options={beanOptions}
+                inputValue={bean}
+                onInputChange={(_e, value, reason) => {
+                  if (reason === 'input') pickBean(value);
+                }}
+                onChange={(_e, value) => {
+                  if (value) pickBean(value);
+                }}
+                renderInput={params => (
+                  <TextField {...params} placeholder="Start typing… e.g. Guatemala" size="small" />
+                )}
+              />
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  display: 'block',
+                  mt: 0.75
+                }}>
+                Pick an existing bean to carry its process over, or keep typing to add a new one.
               </Typography>
+            </Field>
+
+            <Field label="Process" required>
+              <Autocomplete
+                freeSolo
+                options={processOptions}
+                inputValue={process}
+                onInputChange={(_e, value, reason) => {
+                  if (reason === 'input') setProcess(value);
+                }}
+                onChange={(_e, value) => {
+                  if (value) setProcess(value);
+                }}
+                renderInput={params => (
+                  <TextField {...params} placeholder="Start typing… e.g. Washed" size="small" />
+                )}
+              />
+            </Field>
+
+            <Field label="Roasting method" required>
+              <PickRow
+                options={roastingMethods}
+                value={roastingMethods.find(r => r.id === roastingMethodId) ?? null}
+                label={r => r.roaster_name}
+                onSelect={r => setRoastingMethodId(r.id)}
+              />
+            </Field>
+
+            <Field label="Roasting notes">
+              <TextField
+                multiline
+                minRows={2}
+                fullWidth
+                placeholder="Time, first crack, heat/fan profile, stirring…"
+                value={roastingNotes}
+                onChange={e => setRoastingNotes(e.target.value)}
+              />
+            </Field>
+
+            <Field label="Brewing method" required>
+              <PickRow
+                options={brewingMethods}
+                value={brewingMethods.find(b => b.id === brewingMethodId) ?? null}
+                label={b => b.method_name}
+                onSelect={b => setBrewingMethodId(b.id)}
+              />
+            </Field>
+
+            <Field label="Grinder setting">
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="e.g. 20 clicks, Step 11"
+                value={grinderSetting}
+                onChange={e => setGrinderSetting(e.target.value)}
+              />
+            </Field>
+
+            <Field label="Rating" required>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <StarPicker value={rating} onChange={setRating} />
+                <Typography variant="body2" sx={{
+                  color: "text.secondary"
+                }}>
+                  {rating == null ? 'Tap to rate' : `${rating} / 5`}
+                </Typography>
+              </Box>
+            </Field>
+
+            <Field label="General notes">
+              <TextField
+                multiline
+                minRows={2}
+                fullWidth
+                placeholder="Tasting notes, what to change next time…"
+                value={generalNotes}
+                onChange={e => setGeneralNotes(e.target.value)}
+              />
+            </Field>
+
+            <Box sx={{ px: 2, py: 1.5 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 500,
+                  mb: 1
+                }}>
+                Date logged
+              </Typography>
+              <TextField
+                type="date"
+                size="small"
+                value={dateLogged}
+                onChange={e => setDateLogged(e.target.value)}
+              />
             </Box>
-          </Field>
-
-          <Field label="General notes">
-            <TextField
-              multiline
-              minRows={2}
-              fullWidth
-              placeholder="Tasting notes, what to change next time…"
-              value={generalNotes}
-              onChange={e => setGeneralNotes(e.target.value)}
-            />
-          </Field>
-
-          <Box sx={{ px: 2, py: 1.5 }}>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 500,
-                mb: 1
-              }}>
-              Date logged
-            </Typography>
-            <TextField
-              type="date"
-              size="small"
-              value={dateLogged}
-              onChange={e => setDateLogged(e.target.value)}
-            />
           </Box>
-        </Box>
         </Box>
       </Box>
     </Dialog>
