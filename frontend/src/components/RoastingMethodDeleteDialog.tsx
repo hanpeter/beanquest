@@ -1,0 +1,58 @@
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import type { RoastingMethod } from '../types';
+import { ConfirmDialog } from './ConfirmDialog';
+
+interface RoastingMethodDeleteDialogProps {
+  method: RoastingMethod | null;
+  count: number;
+  loading?: boolean;
+  error?: string | null;
+  onCancel: () => void;
+  onDelete: () => void;
+}
+
+/**
+ * Two variants chosen by usage count: an in-use method can't be deleted
+ * (mirrors the API's ON DELETE RESTRICT → 409) and only offers dismissal;
+ * an unused method gets the standard destructive confirm.
+ */
+export function RoastingMethodDeleteDialog({
+  method,
+  count,
+  loading = false,
+  error = null,
+  onCancel,
+  onDelete,
+}: RoastingMethodDeleteDialogProps) {
+  const inUse = method != null && count > 0;
+
+  if (inUse) {
+    return (
+      <Dialog open onClose={onCancel}>
+        <DialogTitle>Can&rsquo;t delete this method</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            &ldquo;{method.roaster_name}&rdquo; is used by <b>{count} {count === 1 ? 'log' : 'logs'}</b>. Reassign or
+            delete those logs first, then you can remove this method.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onCancel}>Got it</Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
+
+  return (
+    <ConfirmDialog
+      open={method != null}
+      title={method ? `Delete "${method.roaster_name}"?` : ''}
+      message="This removes the roasting method. This can't be undone."
+      confirmLabel="Delete"
+      loading={loading}
+      error={error}
+      onConfirm={onDelete}
+      onCancel={onCancel}
+    />
+  );
+}

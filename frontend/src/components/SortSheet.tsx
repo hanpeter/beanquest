@@ -10,14 +10,21 @@ import CheckIcon from '@mui/icons-material/Check';
 import { SORT_OPTIONS } from '../constants';
 import type { SortKey } from '../types';
 
-interface SortSheetProps {
+interface SortSheetProps<K extends string = SortKey> {
   open: boolean;
-  sort: SortKey;
-  onSort: (s: SortKey) => void;
+  sort: K;
+  onSort: (s: K) => void;
   onClose: () => void;
+  options?: { key: K; label: string }[];
 }
 
-export function SortSheet({ open, sort, onSort, onClose }: SortSheetProps) {
+export function SortSheet<K extends string = SortKey>({
+  open,
+  sort,
+  onSort,
+  onClose,
+  options = SORT_OPTIONS as unknown as { key: K; label: string }[],
+}: SortSheetProps<K>) {
   return (
     <Drawer
       anchor="bottom"
@@ -45,7 +52,7 @@ export function SortSheet({ open, sort, onSort, onClose }: SortSheetProps) {
         Sort by
       </Typography>
       <List disablePadding sx={{ pb: 2 }}>
-        {SORT_OPTIONS.map(({ key, label }) => (
+        {options.map(({ key, label }) => (
           <ListItemButton
             key={key}
             onClick={() => { onSort(key); onClose(); }}
