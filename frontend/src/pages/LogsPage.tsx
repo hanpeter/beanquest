@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Alert, Box, Chip, CircularProgress, Container, Fab, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import {
@@ -90,10 +91,15 @@ export function LogsPage() {
   const [filterPanel, setFilterPanel] = useState<FilterPanel | null>(null);
   const [sortOpen, setSortOpen] = useState(false);
 
-  // Filter state
+  // Filter state — roastSel seeds from ?roasting= on arrival (Usage deep-link from
+  // the Roasting Methods detail), read once at mount since the param is a one-shot seed.
+  const [searchParams] = useSearchParams();
   const [ratingMin, setRatingMin] = useState<number | null>(null);
   const [procSel, setProcSel] = useState<string[]>([]);
-  const [roastSel, setRoastSel] = useState<string[]>([]);
+  const [roastSel, setRoastSel] = useState<string[]>(() => {
+    const seeded = searchParams.get('roasting');
+    return seeded ? [seeded] : [];
+  });
   const [brewSel, setBrewSel] = useState<string[]>([]);
   const [sort, setSort] = useState<SortKey>('date-desc');
 

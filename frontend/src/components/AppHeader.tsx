@@ -25,12 +25,14 @@ interface AppHeaderProps {
   onSearchOpen: () => void;
   onSearchClose: () => void;
   onQueryChange: (q: string) => void;
-  activeCount: number;
+  activeCount?: number;
   sortLabel: string;
-  onFilterOpen: () => void;
+  onFilterOpen?: () => void;
   onSortOpen: () => void;
-  summaryText: string;
-  onClearAll: () => void;
+  summaryText?: string;
+  onClearAll?: () => void;
+  breadcrumbLabel?: string;
+  searchPlaceholder?: string;
 }
 
 export function AppHeader({
@@ -41,12 +43,14 @@ export function AppHeader({
   onSearchOpen,
   onSearchClose,
   onQueryChange,
-  activeCount,
+  activeCount = 0,
   sortLabel,
   onFilterOpen,
   onSortOpen,
-  summaryText,
+  summaryText = '',
   onClearAll,
+  breadcrumbLabel = 'Logs',
+  searchPlaceholder = 'Search beans…',
 }: AppHeaderProps) {
   const wide = useWideLayout();
 
@@ -85,10 +89,10 @@ export function AppHeader({
             <InputBase
               autoFocus
               fullWidth
-              placeholder="Search beans…"
+              placeholder={searchPlaceholder}
               value={query}
               onChange={e => onQueryChange(e.target.value)}
-              inputProps={{ 'aria-label': 'Search beans' }}
+              inputProps={{ 'aria-label': searchPlaceholder.replace('…', '') }}
               sx={{ fontSize: '0.9375rem' }}
             />
             <IconButton
@@ -112,7 +116,7 @@ export function AppHeader({
               <Typography variant="subtitle1" component="span" sx={{
                 color: "text.secondary"
               }}>
-                Logs
+                {breadcrumbLabel}
               </Typography>
             </Box>
             {wide ? (
@@ -127,7 +131,7 @@ export function AppHeader({
           </>
         )}
       </Toolbar>
-      {/* Row 2: filter + sort toolbar */}
+      {/* Row 2: filter + sort toolbar (filter half omitted when onFilterOpen is not given) */}
       <Box
         sx={{
           display: 'flex',
@@ -137,37 +141,41 @@ export function AppHeader({
           borderColor: 'divider',
         }}
       >
-        <Box
-          component="button"
-          onClick={onFilterOpen}
-          aria-label={`Filter${activeCount > 0 ? `, ${activeCount} active` : ''}`}
-          sx={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 0.75,
-            border: 0,
-            bgcolor: 'transparent',
-            cursor: 'pointer',
-            color: 'text.primary',
-            typography: 'body2',
-            fontWeight: 500,
-            '&:hover': { bgcolor: 'action.hover' },
-          }}
-        >
-          <FilterListIcon sx={{ fontSize: 18 }} />
-          <span>Filter</span>
-          {activeCount > 0 && (
-            <Badge
-              badgeContent={activeCount}
-              color="primary"
-              sx={{ '& .MuiBadge-badge': { position: 'static', transform: 'none', ml: 0.25 } }}
-            />
-          )}
-        </Box>
+        {onFilterOpen && (
+          <>
+            <Box
+              component="button"
+              onClick={onFilterOpen}
+              aria-label={`Filter${activeCount > 0 ? `, ${activeCount} active` : ''}`}
+              sx={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 0.75,
+                border: 0,
+                bgcolor: 'transparent',
+                cursor: 'pointer',
+                color: 'text.primary',
+                typography: 'body2',
+                fontWeight: 500,
+                '&:hover': { bgcolor: 'action.hover' },
+              }}
+            >
+              <FilterListIcon sx={{ fontSize: 18 }} />
+              <span>Filter</span>
+              {activeCount > 0 && (
+                <Badge
+                  badgeContent={activeCount}
+                  color="primary"
+                  sx={{ '& .MuiBadge-badge': { position: 'static', transform: 'none', ml: 0.25 } }}
+                />
+              )}
+            </Box>
 
-        <Divider orientation="vertical" flexItem />
+            <Divider orientation="vertical" flexItem />
+          </>
+        )}
 
         <Box
           component="button"
@@ -193,7 +201,7 @@ export function AppHeader({
         </Box>
       </Box>
       {/* Row 3: applied-filters summary (only when ≥1 filter active) */}
-      {activeCount > 0 && (
+      {onFilterOpen && activeCount > 0 && (
         <Box
           sx={{
             display: 'flex',

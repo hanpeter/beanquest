@@ -9,6 +9,7 @@ import {
   ListItemText,
   Typography,
 } from '@mui/material';
+import { useLocation, useNavigate } from 'react-router-dom';
 import CloseIcon from '@mui/icons-material/Close';
 import LocalCafeIcon from '@mui/icons-material/LocalCafe';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
@@ -21,6 +22,16 @@ interface NavDrawerProps {
 }
 
 export function NavDrawer({ open, onClose }: NavDrawerProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isRoasting = location.pathname === '/roasting-methods';
+  const isLogs = !isRoasting;
+
+  const go = (path: string) => {
+    navigate(path);
+    onClose();
+  };
+
   return (
     <Drawer
       anchor="left"
@@ -45,13 +56,13 @@ export function NavDrawer({ open, onClose }: NavDrawerProps) {
       </Box>
       <Divider />
       <List sx={{ px: 1 }}>
-        <ListItemButton selected onClick={onClose}>
+        <ListItemButton selected={isLogs} onClick={() => go('/logs')}>
           <ListItemIcon sx={{ minWidth: 36 }}>
             <MenuBookIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText primary="Logs" />
         </ListItemButton>
-        <ListItemButton onClick={onClose}>
+        <ListItemButton selected={isRoasting} onClick={() => go('/roasting-methods')}>
           <ListItemIcon sx={{ minWidth: 36 }}>
             <LocalFireDepartmentIcon fontSize="small" />
           </ListItemIcon>

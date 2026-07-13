@@ -1,4 +1,4 @@
-import type { PastLog, PastLogInput, RoastingMethod, BrewingMethod } from './types';
+import type { PastLog, PastLogInput, RoastingMethod, RoastingMethodInput, BrewingMethod } from './types';
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T | null> {
   const init: RequestInit = { method, headers: { 'Content-Type': 'application/json' } };
@@ -31,4 +31,16 @@ export function updatePastLog(id: number, body: PastLogInput): Promise<PastLog |
 
 export function deletePastLog(id: number): Promise<null> {
   return request<null>('DELETE', `/api/v1/past-logs/${id}`);
+}
+
+export function createRoastingMethod(body: RoastingMethodInput): Promise<RoastingMethod | null> {
+  return request<RoastingMethod>('POST', '/api/v1/roasting-methods', body);
+}
+
+export function updateRoastingMethod(id: number, body: RoastingMethodInput): Promise<RoastingMethod | null> {
+  return request<RoastingMethod>('PUT', `/api/v1/roasting-methods/${id}`, body);
+}
+
+export function deleteRoastingMethod(id: number): Promise<null> {
+  return request<null>('DELETE', `/api/v1/roasting-methods/${id}`);
 }

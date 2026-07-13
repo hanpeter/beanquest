@@ -106,105 +106,105 @@ export function LogDetail({ log, siblings, onBack, onOpenSibling, onBrewAgain, o
         )}
       </Box>
       <Box sx={{ flex: 1, overflow: 'auto' }}>
-      <Box sx={{ maxWidth: CONTENT_MAX_WIDTH, mx: 'auto' }}>
-        <Box sx={{ px: 2, py: 2 }}>
-          <Typography variant="h5" sx={{
-            fontWeight: 700
-          }}>
-            {log.bean_name}
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.75 }}>
-            <Chip label={log.process} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
-            <Stars score={log.rating_score} />
-            <Typography variant="body2" sx={{
-              color: "text.secondary"
+        <Box sx={{ maxWidth: CONTENT_MAX_WIDTH, mx: 'auto' }}>
+          <Box sx={{ px: 2, py: 2 }}>
+            <Typography variant="h5" sx={{
+              fontWeight: 700
             }}>
-              · {fmtLong(log.date_logged)}
+              {log.bean_name}
             </Typography>
-          </Box>
-        </Box>
-
-        <Section icon={<LocalFireDepartmentIcon sx={sectionIconSx} />} title="Roast">
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: log.roasting_notes ? 1 : 0 }}>
-            <Typography variant="body2" sx={{
-              color: "text.secondary"
-            }}>
-              Roaster
-            </Typography>
-            <Typography variant="body2">{log.roasting_method_name}</Typography>
-          </Box>
-          {log.roasting_notes && <Typography variant="body2">{log.roasting_notes}</Typography>}
-        </Section>
-
-        <Section icon={<LocalCafeIcon sx={sectionIconSx} />} title="Brew">
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="body2" sx={{
-              color: "text.secondary"
-            }}>
-              Method
-            </Typography>
-            <Typography variant="body2">{log.brewing_method_name}</Typography>
-          </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-            <Typography variant="body2" sx={{
-              color: "text.secondary"
-            }}>
-              Grinder
-            </Typography>
-            <Typography variant="body2">{log.grinder_setting || '—'}</Typography>
-          </Box>
-        </Section>
-
-        {log.general_notes && (
-          <Section icon={<NotesIcon sx={sectionIconSx} />} title="Tasting notes">
-            <Typography variant="body2">{log.general_notes}</Typography>
-          </Section>
-        )}
-
-        {siblings.length > 0 && (
-          <Box sx={{ px: 2, py: 1.5 }}>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                fontWeight: 600,
-                mb: 1
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.75 }}>
+              <Chip label={log.process} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
+              <Stars score={log.rating_score} />
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
               }}>
-              Other brews of this bean
-            </Typography>
-            {siblings.map((s, i) => (
-              <Box key={s.id}>
-                <Box
-                  onClick={() => onOpenSibling(s.id)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onOpenSibling(s.id)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    py: 1,
-                    cursor: 'pointer',
-                    '&:hover': { bgcolor: 'action.hover' },
-                  }}
-                >
-                  <Box>
-                    <Typography variant="body2">
-                      {s.brewing_method_name} · {s.grinder_setting}
-                    </Typography>
-                    <Typography variant="caption" sx={{
-                      color: "text.secondary"
-                    }}>
-                      {fmtLong(s.date_logged)}
-                    </Typography>
-                  </Box>
-                  <Stars score={s.rating_score} />
-                </Box>
-                {i < siblings.length - 1 && <Divider />}
-              </Box>
-            ))}
+                · {fmtLong(log.date_logged)}
+              </Typography>
+            </Box>
           </Box>
-        )}
-      </Box>
+
+          <Section icon={<LocalFireDepartmentIcon sx={sectionIconSx} />} title="Roast">
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: log.roasting_notes ? 1 : 0 }}>
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
+                Roaster
+              </Typography>
+              <Typography variant="body2">{log.roasting_method_name}</Typography>
+            </Box>
+            {log.roasting_notes && <Typography variant="body2">{log.roasting_notes}</Typography>}
+          </Section>
+
+          <Section icon={<LocalCafeIcon sx={sectionIconSx} />} title="Brew">
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
+                Method
+              </Typography>
+              <Typography variant="body2">{log.brewing_method_name}</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
+                Grinder
+              </Typography>
+              <Typography variant="body2">{log.grinder_setting || '—'}</Typography>
+            </Box>
+          </Section>
+
+          {log.general_notes && (
+            <Section icon={<NotesIcon sx={sectionIconSx} />} title="Tasting notes">
+              <Typography variant="body2">{log.general_notes}</Typography>
+            </Section>
+          )}
+
+          {siblings.length > 0 && (
+            <Box sx={{ px: 2, py: 1.5 }}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 600,
+                  mb: 1
+                }}>
+                Other brews of this bean
+              </Typography>
+              {siblings.map((s, i) => (
+                <Box key={s.id}>
+                  <Box
+                    onClick={() => onOpenSibling(s.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onOpenSibling(s.id)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      py: 1,
+                      cursor: 'pointer',
+                      '&:hover': { bgcolor: 'action.hover' },
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="body2">
+                        {s.brewing_method_name} · {s.grinder_setting}
+                      </Typography>
+                      <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                      }}>
+                        {fmtLong(s.date_logged)}
+                      </Typography>
+                    </Box>
+                    <Stars score={s.rating_score} />
+                  </Box>
+                  {i < siblings.length - 1 && <Divider />}
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
       </Box>
     </Dialog>
   );

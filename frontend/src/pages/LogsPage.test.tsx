@@ -1,5 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { LogsPage } from './LogsPage';
 import * as api from '../api';
 import type { PastLog } from '../types';
@@ -26,8 +27,12 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-async function renderPage() {
-  render(<LogsPage />);
+async function renderPage(initialEntry = '/logs') {
+  render(
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <LogsPage />
+    </MemoryRouter>,
+  );
   await waitFor(() => expect(screen.getByText('Guatemala Huehuetenango')).toBeInTheDocument());
 }
 
@@ -108,5 +113,20 @@ describe('LogsPage', () => {
     await waitFor(() => expect(screen.getByText('500 Internal Server Error')).toBeInTheDocument());
     expect(screen.getByLabelText('Delete')).toBeInTheDocument(); // detail panel still open
     expect(screen.getByText('Delete this log?')).toBeInTheDocument();
+  });
+
+  it('seeds the roasting-method filter from a ?roasting= deep-link', async () => {
+    await renderPage('/logs?roasting=Popcorn%20popper');
+    expect(screen.getByText('Roasting: Popcorn popper', { exact: false })).toBeInTheDocument();
+    expect(screen.getByText('Guatemala Huehuetenango')).toBeInTheDocument();
+  });
+
+  it('shows the empty state when the deep-linked method has no matching logs', async () => {
+    render(
+      <MemoryRouter initialEntries={['/logs?roasting=Air%20roaster']}>
+        <LogsPage />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByText('No logs match')).toBeInTheDocument());
   });
 });

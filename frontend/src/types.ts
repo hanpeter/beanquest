@@ -74,3 +74,18 @@ export interface LogFormState {
   editId: number | null;
   seed: Partial<PastLogInput>;
 }
+
+export type RoastingSortKey = 'name-asc' | 'name-desc' | 'used-desc' | 'recent';
+
+/** Payload for creating/updating a RoastingMethod — mirrors the backend's writable fields. */
+export interface RoastingMethodInput {
+  roaster_name: string;
+  description: string;
+}
+
+/** New/edit form state, held by RoastingMethodsPage. */
+export interface RoastingMethodFormState {
+  title: string;
+  editId: number | null;
+  seed: Partial<RoastingMethodInput>;
+}
