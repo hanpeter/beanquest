@@ -1,4 +1,4 @@
-import type { RoastingSortKey, SortKey } from './types';
+import type { BrewingSortKey, RoastingSortKey, SortKey } from './types';
 
 export const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'date-desc', label: 'Date — newest first' },
@@ -22,6 +22,20 @@ export const ROASTING_SORT_OPTIONS: { key: RoastingSortKey; label: string }[] = 
 ];
 
 export const ROASTING_SORT_LABEL: Record<RoastingSortKey, string> = {
+  'name-asc': 'Name',
+  'name-desc': 'Name',
+  'used-desc': 'Most used',
+  'recent': 'Recently added',
+};
+
+export const BREWING_SORT_OPTIONS: { key: BrewingSortKey; label: string }[] = [
+  { key: 'name-asc', label: 'Name — A to Z' },
+  { key: 'name-desc', label: 'Name — Z to A' },
+  { key: 'used-desc', label: 'Most used' },
+  { key: 'recent', label: 'Recently added' },
+];
+
+export const BREWING_SORT_LABEL: Record<BrewingSortKey, string> = {
   'name-asc': 'Name',
   'name-desc': 'Name',
   'used-desc': 'Most used',

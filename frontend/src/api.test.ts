@@ -5,8 +5,11 @@ import {
   createRoastingMethod,
   updateRoastingMethod,
   deleteRoastingMethod,
+  createBrewingMethod,
+  updateBrewingMethod,
+  deleteBrewingMethod,
 } from './api';
-import type { PastLogInput, RoastingMethodInput } from './types';
+import type { PastLogInput, RoastingMethodInput, BrewingMethodInput } from './types';
 
 const INPUT: PastLogInput = {
   bean_name: 'Guatemala',
@@ -136,6 +139,68 @@ describe('deleteRoastingMethod', () => {
   it('throws on a 409 conflict (method still referenced by logs)', async () => {
     vi.stubGlobal('fetch', mockFetch(409, { detail: 'RoastingMethod 5 is referenced by existing past_logs' }));
     await expect(deleteRoastingMethod(5)).rejects.toThrow('409');
+    vi.unstubAllGlobals();
+  });
+});
+
+const BREWING_METHOD_INPUT: BrewingMethodInput = {
+  method_name: 'Pour over',
+  machine_used: 'Hario V60-02',
+  grinder_used: 'Comandante C40',
+};
+
+describe('createBrewingMethod', () => {
+  it('POSTs to /api/v1/brewing-methods with the input body', async () => {
+    const fetchMock = mockFetch(201, { id: 1, ...BREWING_METHOD_INPUT });
+    vi.stubGlobal('fetch', fetchMock);
+    const result = await createBrewingMethod(BREWING_METHOD_INPUT);
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/brewing-methods', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(BREWING_METHOD_INPUT),
+    });
+    expect(result).toEqual({ id: 1, ...BREWING_METHOD_INPUT });
+    vi.unstubAllGlobals();
+  });
+
+  it('throws on a non-ok response', async () => {
+    vi.stubGlobal('fetch', mockFetch(422, { detail: 'invalid' }));
+    await expect(createBrewingMethod(BREWING_METHOD_INPUT)).rejects.toThrow('422');
+    vi.unstubAllGlobals();
+  });
+});
+
+describe('updateBrewingMethod', () => {
+  it('PUTs to /api/v1/brewing-methods/{id} with the input body', async () => {
+    const fetchMock = mockFetch(200, { id: 5, ...BREWING_METHOD_INPUT });
+    vi.stubGlobal('fetch', fetchMock);
+    const result = await updateBrewingMethod(5, BREWING_METHOD_INPUT);
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/brewing-methods/5', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(BREWING_METHOD_INPUT),
+    });
+    expect(result).toEqual({ id: 5, ...BREWING_METHOD_INPUT });
+    vi.unstubAllGlobals();
+  });
+});
+
+describe('deleteBrewingMethod', () => {
+  it('DELETEs /api/v1/brewing-methods/{id} and returns null on 204', async () => {
+    const fetchMock = mockFetch(204, null);
+    vi.stubGlobal('fetch', fetchMock);
+    const result = await deleteBrewingMethod(5);
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/brewing-methods/5', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    expect(result).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
+  it('throws on a 409 conflict (method still referenced by logs)', async () => {
+    vi.stubGlobal('fetch', mockFetch(409, { detail: 'BrewingMethod 5 is referenced by existing past_logs' }));
+    await expect(deleteBrewingMethod(5)).rejects.toThrow('409');
     vi.unstubAllGlobals();
   });
 });

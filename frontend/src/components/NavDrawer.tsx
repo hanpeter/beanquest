@@ -25,7 +25,8 @@ export function NavDrawer({ open, onClose }: NavDrawerProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const isRoasting = location.pathname === '/roasting-methods';
-  const isLogs = !isRoasting;
+  const isBrewing = location.pathname === '/brewing-methods';
+  const isLogs = !isRoasting && !isBrewing;
 
   const go = (path: string) => {
     navigate(path);
@@ -68,7 +69,7 @@ export function NavDrawer({ open, onClose }: NavDrawerProps) {
           </ListItemIcon>
           <ListItemText primary="Roasting Methods" />
         </ListItemButton>
-        <ListItemButton onClick={onClose}>
+        <ListItemButton selected={isBrewing} onClick={() => go('/brewing-methods')}>
           <ListItemIcon sx={{ minWidth: 36 }}>
             <LocalCafeIcon fontSize="small" />
           </ListItemIcon>
