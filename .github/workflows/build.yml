@@ -15,6 +15,9 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      digest: ${{ steps.build.outputs.digest }}
     permissions:
       contents: read
       packages: write
@@ -45,6 +48,7 @@ jobs:
             type=semver,pattern={{major}},enable=${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
             type=raw,value=latest,enable=${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
       - name: Docker Build
+        id: build
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           file: docker/beanquest/Dockerfile
@@ -53,8 +57,35 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
+          provenance: true
+          sbom: true
           cache-from: type=gha,scope=beanquest
           cache-to: type=gha,mode=max,scope=beanquest
+
+  release:
+    name: Release
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+        with:
+          generate_release_notes: true
+          body: |
+            ## Docker image
+
+            Published to `ghcr.io/${{ github.repository }}`.
+
+            ```sh
+            docker pull ghcr.io/${{ github.repository }}:${{ needs.build.outputs.version }}
+            docker pull ghcr.io/${{ github.repository }}@${{ needs.build.outputs.digest }}
+            ```
+
+            **Digest:** `${{ needs.build.outputs.digest }}`
 
 concurrency:
   cancel-in-progress: true
