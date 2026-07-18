@@ -89,3 +89,19 @@ export interface RoastingMethodFormState {
   editId: number | null;
   seed: Partial<RoastingMethodInput>;
 }
+
+export type BrewingSortKey = 'name-asc' | 'name-desc' | 'used-desc' | 'recent';
+
+/** Payload for creating/updating a BrewingMethod — mirrors the backend's writable fields. */
+export interface BrewingMethodInput {
+  method_name: string;
+  machine_used: string;
+  grinder_used: string;
+}
+
+/** New/edit form state, held by BrewingMethodsPage. */
+export interface BrewingMethodFormState {
+  title: string;
+  editId: number | null;
+  seed: Partial<BrewingMethodInput>;
+}

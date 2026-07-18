@@ -129,4 +129,19 @@ describe('LogsPage', () => {
     );
     await waitFor(() => expect(screen.getByText('No logs match')).toBeInTheDocument());
   });
+
+  it('seeds the brewing-method filter from a ?brewing= deep-link', async () => {
+    await renderPage('/logs?brewing=Manual%20espresso');
+    expect(screen.getByText('Brewing: Manual espresso', { exact: false })).toBeInTheDocument();
+    expect(screen.getByText('Guatemala Huehuetenango')).toBeInTheDocument();
+  });
+
+  it('shows the empty state when the deep-linked brewing method has no matching logs', async () => {
+    render(
+      <MemoryRouter initialEntries={['/logs?brewing=Pour%20over']}>
+        <LogsPage />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByText('No logs match')).toBeInTheDocument());
+  });
 });

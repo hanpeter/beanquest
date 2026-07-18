@@ -91,8 +91,9 @@ export function LogsPage() {
   const [filterPanel, setFilterPanel] = useState<FilterPanel | null>(null);
   const [sortOpen, setSortOpen] = useState(false);
 
-  // Filter state — roastSel seeds from ?roasting= on arrival (Usage deep-link from
-  // the Roasting Methods detail), read once at mount since the param is a one-shot seed.
+  // Filter state — roastSel/brewSel seed from ?roasting=/?brewing= on arrival (Usage
+  // deep-link from the Roasting/Brewing Methods detail), read once at mount since the
+  // param is a one-shot seed.
   const [searchParams] = useSearchParams();
   const [ratingMin, setRatingMin] = useState<number | null>(null);
   const [procSel, setProcSel] = useState<string[]>([]);
@@ -100,7 +101,10 @@ export function LogsPage() {
     const seeded = searchParams.get('roasting');
     return seeded ? [seeded] : [];
   });
-  const [brewSel, setBrewSel] = useState<string[]>([]);
+  const [brewSel, setBrewSel] = useState<string[]>(() => {
+    const seeded = searchParams.get('brewing');
+    return seeded ? [seeded] : [];
+  });
   const [sort, setSort] = useState<SortKey>('date-desc');
 
   // Detail / form state
