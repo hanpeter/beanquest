@@ -1,11 +1,10 @@
 from contextlib import contextmanager, nullcontext
 
-import bcrypt
 import psycopg
 from psycopg.rows import dict_row
 
 from beanquest.errors import Conflict, NotFound
-from beanquest.models import BrewingMethod, PastLog, RoastingMethod, User
+from beanquest.models import AuthIdentity, BrewingMethod, PastLog, RoastingMethod, User
 
 
 class Database:
@@ -40,16 +39,18 @@ class Database:
         row = self._select_one(User.SELECT_ONE, [id])
         return User.model_validate(row) if row else None
 
+    def get_user_by_email(self, email: str) -> User | None:
+        row = self._select_one(User.SELECT_BY_EMAIL, [email])
+        return User.model_validate(row) if row else None
+
     def add_user(self, user: User, conn=None) -> int:
-        password_hash = (
-            bcrypt.hashpw(user.password.encode(), bcrypt.gensalt()).decode()
-            if user.password else None
-        )
-        params = user.model_dump(exclude={'password'}) | {'password_hash': password_hash}
-        with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
-            with conn.cursor() as cur:
-                cur.execute(User.INSERT, params)
-                return cur.fetchone()[0]
+        try:
+            with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(User.INSERT, user.model_dump())
+                    return cur.fetchone()[0]
+        except psycopg.errors.UniqueViolation as e:
+            raise Conflict(f'User with email {user.email} already exists') from e
 
     def delete_user(self, id: int, conn=None) -> None:
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
@@ -57,6 +58,20 @@ class Database:
                 cur.execute(User.DELETE, [id])
                 if cur.rowcount == 0:
                     raise NotFound(f'User {id} not found')
+
+    # -------------------------------------------------------------------------
+    # AuthIdentity
+    # -------------------------------------------------------------------------
+
+    def get_auth_identity(self, user_id: int, provider: str) -> AuthIdentity | None:
+        row = self._select_one(AuthIdentity.SELECT_BY_USER_AND_PROVIDER, [user_id, provider])
+        return AuthIdentity.model_validate(row) if row else None
+
+    def add_auth_identity(self, identity: AuthIdentity, conn=None) -> int:
+        with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
+            with conn.cursor() as cur:
+                cur.execute(AuthIdentity.INSERT, identity.model_dump())
+                return cur.fetchone()[0]
 
     # -------------------------------------------------------------------------
     # BrewingMethod

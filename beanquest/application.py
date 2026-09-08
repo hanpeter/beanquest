@@ -1,14 +1,16 @@
+from beanquest.auth import PasswordAuth
 from beanquest.db import Database
-from beanquest.errors import NotFound
-from beanquest.models import BrewingMethod, PastLog, RoastingMethod, User
+from beanquest.errors import NotFound, Unauthorized
+from beanquest.models import AuthIdentity, BrewingMethod, PastLog, RoastingMethod, User
 
 
 class Application:
-    def __init__(self, database: Database):
+    def __init__(self, database: Database, password_auth: PasswordAuth):
         self._database = database
+        self._password_auth = password_auth
 
     # -------------------------------------------------------------------------
-    # User
+    # User / auth
     # -------------------------------------------------------------------------
 
     def get_user(self, id) -> User:
@@ -17,15 +19,31 @@ class Application:
             raise NotFound(f'User {id} not found')
         return result
 
-    def get_users(self) -> list[User]:
-        return self._database.get_users()
+    def create_user_with_password(self, user: User, password: str) -> User:
+        """The only way a user comes into existence — always with a login
+        method attached. A future create_user_with_google etc. would follow
+        this same shape: insert the user, then link an auth_identity to it.
+        """
+        password_hash = self._password_auth.create(password)
+        with self._database.transaction() as conn:
+            user_id = self._database.add_user(user, conn=conn)
+            identity = AuthIdentity(user_id=user_id, provider='password', password_hash=password_hash)
+            self._database.add_auth_identity(identity, conn=conn)
+        return self.get_user(user_id)
 
-    def add_user(self, user: User) -> User:
-        id = self._database.add_user(user)
-        return self.get_user(id)
-
-    def delete_user(self, id: int) -> None:
-        self._database.delete_user(id)
+    def verify_password_login(self, email: str, password: str) -> User:
+        user = self._database.get_user_by_email(email)
+        identity = self._database.get_auth_identity(user.id, 'password') if user else None
+        if (
+            not user
+            or not identity
+            or not identity.password_hash
+            or not self._password_auth.verify(password, identity.password_hash)
+        ):
+            # Same message regardless of which check failed — don't leak
+            # whether the account exists or which factor was wrong.
+            raise Unauthorized('invalid email or password')
+        return user
 
     # -------------------------------------------------------------------------
     # BrewingMethod

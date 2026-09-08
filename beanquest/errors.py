@@ -4,3 +4,7 @@ class NotFound(LookupError):
 
 class Conflict(RuntimeError):
     """Raised when a write conflicts with existing state (e.g. FK violation)."""
+
+
+class Unauthorized(RuntimeError):
+    """Raised when authentication is missing, invalid, or expired."""

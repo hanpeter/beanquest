@@ -5,8 +5,22 @@ CREATE TABLE IF NOT EXISTS users (
     first_name     VARCHAR(100) NOT NULL,
     last_name      VARCHAR(100) NOT NULL,
     email          VARCHAR(255) NOT NULL UNIQUE,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_at    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- One row per (user, login method) they have set up. 'password' now;
+-- 'google' / 'apple' / etc. later, without touching this shape.
+CREATE TABLE IF NOT EXISTS auth_identities (
+    id             SERIAL PRIMARY KEY,
+    user_id        INT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    provider       VARCHAR(20) NOT NULL,
+    provider_uid   VARCHAR(255),
     password_hash  VARCHAR(255),
-    created_at     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_at    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (provider, provider_uid),
+    UNIQUE (user_id, provider)
 );
 
 CREATE TABLE IF NOT EXISTS brewing_methods (
@@ -42,3 +56,7 @@ CREATE TABLE IF NOT EXISTS past_logs (
     general_notes       TEXT,
     date_logged         TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS brewing_methods_user_id_idx ON brewing_methods (user_id);
+CREATE INDEX IF NOT EXISTS roasting_methods_user_id_idx ON roasting_methods (user_id);
+CREATE INDEX IF NOT EXISTS past_logs_user_id_idx ON past_logs (user_id);
