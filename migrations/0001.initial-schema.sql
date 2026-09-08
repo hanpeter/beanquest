@@ -60,3 +60,13 @@ CREATE TABLE IF NOT EXISTS past_logs (
 CREATE INDEX IF NOT EXISTS brewing_methods_user_id_idx ON brewing_methods (user_id);
 CREATE INDEX IF NOT EXISTS roasting_methods_user_id_idx ON roasting_methods (user_id);
 CREATE INDEX IF NOT EXISTS past_logs_user_id_idx ON past_logs (user_id);
+
+-- Tracks failed password-login attempts per email for rate limiting.
+-- Keyed by raw email (not a users FK) — has to track attempts against
+-- emails that may not correspond to a real account too.
+CREATE TABLE IF NOT EXISTS login_attempts (
+    email          VARCHAR(255) PRIMARY KEY,
+    failure_count  INT NOT NULL DEFAULT 0,
+    locked_until   TIMESTAMPTZ,
+    updated_at     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

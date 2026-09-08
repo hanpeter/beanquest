@@ -4,7 +4,7 @@ import psycopg
 from psycopg.rows import dict_row
 
 from beanquest.errors import Conflict, NotFound
-from beanquest.models import AuthIdentity, BrewingMethod, PastLog, RoastingMethod, User
+from beanquest.models import AuthIdentity, BrewingMethod, LoginAttempt, PastLog, RoastingMethod, User
 
 
 class Database:
@@ -72,6 +72,27 @@ class Database:
             with conn.cursor() as cur:
                 cur.execute(AuthIdentity.INSERT, identity.model_dump())
                 return cur.fetchone()[0]
+
+    # -------------------------------------------------------------------------
+    # LoginAttempt
+    # -------------------------------------------------------------------------
+
+    def get_login_attempt(self, email: str) -> LoginAttempt | None:
+        row = self._select_one(LoginAttempt.SELECT_ONE, [email])
+        return LoginAttempt.model_validate(row) if row else None
+
+    def record_login_failure(self, email: str) -> LoginAttempt | None:
+        """Atomically reserves this attempt and records it as a failure.
+        Returns None if the account is already locked — an already-locked
+        row is left untouched, so hammering it can't extend the lock.
+        """
+        row = self._select_one(LoginAttempt.UPSERT_FAILURE, [email])
+        return LoginAttempt.model_validate(row) if row else None
+
+    def reset_login_attempts(self, email: str) -> None:
+        with self._pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(LoginAttempt.DELETE, [email])
 
     # -------------------------------------------------------------------------
     # BrewingMethod

@@ -1,11 +1,37 @@
+import re
 from datetime import datetime, timedelta, timezone
+from typing import Annotated
 
 import bcrypt
 import jwt
+from pydantic import AfterValidator
 
 from beanquest.errors import Unauthorized
 
 _JWT_ALGORITHM = 'HS256'
+_SPECIAL_CHAR = re.compile(r'[^A-Za-z0-9]')
+
+
+def _validate_password_strength(v: str) -> str:
+    """At least 10 characters, and 2+ of: lowercase, uppercase, number, special."""
+    if len(v) < 10:
+        raise ValueError('password must be at least 10 characters long')
+    categories_met = sum([
+        any(c.islower() for c in v),
+        any(c.isupper() for c in v),
+        any(c.isdigit() for c in v),
+        bool(_SPECIAL_CHAR.search(v)),
+    ])
+    if categories_met < 2:
+        raise ValueError(
+            'password must include at least 2 of: lowercase, uppercase, number, special character'
+        )
+    return v
+
+
+# Only for setting/changing a password (signup, future password-change) —
+# never for login, where the password must be checked as originally set.
+StrongPassword = Annotated[str, AfterValidator(_validate_password_strength)]
 
 
 class PasswordAuth:

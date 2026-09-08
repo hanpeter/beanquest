@@ -1,6 +1,8 @@
+from datetime import datetime, timezone
+
 from beanquest.auth import PasswordAuth
 from beanquest.db import Database
-from beanquest.errors import NotFound, Unauthorized
+from beanquest.errors import NotFound, RateLimited, Unauthorized
 from beanquest.models import AuthIdentity, BrewingMethod, PastLog, RoastingMethod, User
 
 
@@ -32,6 +34,14 @@ class Application:
         return self.get_user(user_id)
 
     def verify_password_login(self, email: str, password: str) -> User:
+        # Reserve this attempt and record it as a failure *before* touching
+        # the password — this is what makes the 5-attempt limit race-safe
+        # under concurrent requests (see LoginAttempt.UPSERT_FAILURE) without
+        # holding a lock across the slow bcrypt check below. A successful
+        # login clears it again at the end.
+        if self._database.record_login_failure(email) is None:
+            raise RateLimited('too many failed login attempts', self._retry_after_seconds(email))
+
         user = self._database.get_user_by_email(email)
         identity = self._database.get_auth_identity(user.id, 'password') if user else None
         if (
@@ -41,9 +51,19 @@ class Application:
             or not self._password_auth.verify(password, identity.password_hash)
         ):
             # Same message regardless of which check failed — don't leak
-            # whether the account exists or which factor was wrong.
+            # whether the account exists or which factor was wrong. The
+            # failure is already recorded above; nothing more to do here.
             raise Unauthorized('invalid email or password')
+
+        self._database.reset_login_attempts(email)
         return user
+
+    def _retry_after_seconds(self, email: str) -> int:
+        attempt = self._database.get_login_attempt(email)
+        if attempt is None or attempt.locked_until is None:
+            return 1
+        remaining = (attempt.locked_until - datetime.now(timezone.utc)).total_seconds()
+        return max(1, int(remaining) + 1)
 
     # -------------------------------------------------------------------------
     # BrewingMethod
