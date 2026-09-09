@@ -2,8 +2,13 @@ from datetime import datetime, timezone
 
 from beanquest.auth import PasswordAuth
 from beanquest.db import Database
-from beanquest.errors import NotFound, RateLimited, Unauthorized
-from beanquest.models import AuthIdentity, BrewingMethod, PastLog, RoastingMethod, User
+from beanquest.errors import InvalidCredentials, NotFound, RateLimited
+from beanquest.models import AuthIdentity, BrewingMethod, LoginAttempt, PastLog, RoastingMethod, User
+
+
+def _seconds_until(moment: datetime) -> int:
+    remaining = (moment - datetime.now(timezone.utc)).total_seconds()
+    return max(1, int(remaining) + 1)
 
 
 class Application:
@@ -38,11 +43,12 @@ class Application:
 
     def verify_password_login(self, email: str, password: str) -> User:
         # Reserve this attempt and record it as a failure *before* touching
-        # the password — this is what makes the 5-attempt limit race-safe
-        # under concurrent requests (see LoginAttempt.UPSERT_FAILURE) without
-        # holding a lock across the slow bcrypt check below. A successful
-        # login clears it again at the end.
-        if self._database.record_login_failure(email) is None:
+        # the password — this is what makes the attempt limit race-safe under
+        # concurrent requests (see LoginAttempt.UPSERT_FAILURE) without holding
+        # a lock across the slow bcrypt check below. A successful login clears
+        # it again at the end.
+        attempt = self._database.record_login_failure(email)
+        if attempt is None:
             raise RateLimited('too many failed login attempts', self._retry_after_seconds(email))
 
         user = self._database.get_user_by_email(email)
@@ -53,20 +59,47 @@ class Application:
             or not identity.password_hash
             or not self._password_auth.verify(password, identity.password_hash)
         ):
-            # Same message regardless of which check failed — don't leak
-            # whether the account exists or which factor was wrong. The
-            # failure is already recorded above; nothing more to do here.
-            raise Unauthorized('invalid email or password')
+            # Same message regardless of which check failed — don't leak which
+            # factor was wrong. attempts_left is safe to report: UPSERT_FAILURE
+            # creates a row for any address, account or not, so the count says
+            # nothing about whether the account exists. It's a narrower signal
+            # on login history too, now that a stale count also resets on
+            # simple elapsed time (see UPSERT_FAILURE's decay behavior) — but
+            # not a closed one: an attacker probing more often than one
+            # LOCK_DURATION apart can still see attempts_left jump back up the
+            # instant a successful login clears the row.
+            if attempt.failure_count >= LoginAttempt.MAX_FAILURES:
+                # This failure is the one that hit the limit — report the lock
+                # now, using the row already in hand, rather than letting the
+                # client discover it on the next attempt. Checked via
+                # failure_count rather than `locked_until is not None`, so this
+                # stays correct even if a future change lets locked_until carry
+                # a stale value below the threshold.
+                raise RateLimited(
+                    'too many failed login attempts', _seconds_until(attempt.locked_until)
+                )
+            raise InvalidCredentials(
+                'invalid email or password',
+                LoginAttempt.MAX_FAILURES - attempt.failure_count,
+            )
 
         self._database.reset_login_attempts(email)
         return user
 
     def _retry_after_seconds(self, email: str) -> int:
+        # Only reached when record_login_failure returned None — i.e. the row
+        # was *already* locked, so UPSERT_FAILURE's WHERE guard left it
+        # untouched and RETURNING gave us nothing (that guard is what stops
+        # hammering an account from extending its own lock). We don't hold
+        # locked_until in that case, so a refetch here is required, not
+        # avoidable — it's confined to the already-locked path; the failure
+        # that *causes* the lock never comes through here.
         attempt = self._database.get_login_attempt(email)
         if attempt is None or attempt.locked_until is None:
+            # Race: the lock expired, or a concurrent login succeeded and
+            # cleared the row, between the upsert and this fetch.
             return 1
-        remaining = (attempt.locked_until - datetime.now(timezone.utc)).total_seconds()
-        return max(1, int(remaining) + 1)
+        return _seconds_until(attempt.locked_until)
 
     # -------------------------------------------------------------------------
     # BrewingMethod

@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from beanquest.api import app, get_application, get_auth, get_current_user_id
 from beanquest.application import Application
 from beanquest.auth import AccessTokenAuth
-from beanquest.errors import Conflict, NotFound, RateLimited, Unauthorized
+from beanquest.errors import Conflict, InvalidCredentials, NotFound, RateLimited, Unauthorized
 from beanquest.models import BrewingMethod, PastLog, RoastingMethod, User
 
 TEST_USER_ID = 7
@@ -186,6 +186,19 @@ def test_login_invalid_credentials(auth_client):
     mock.verify_password_login.side_effect = Unauthorized('invalid email or password')
     r = c.post('/api/v1/auth/login', json={'email': 'a@b.com', 'password': 'wrong'})
     assert r.status_code == 401
+    # A bare Unauthorized (e.g. missing/invalid bearer token) must stay bare —
+    # only InvalidCredentials carries attempts_left.
+    assert 'attempts_left' not in r.json()
+
+
+def test_login_wrong_password_reports_attempts_left(auth_client):
+    c, mock = auth_client
+    mock.verify_password_login.side_effect = InvalidCredentials('invalid email or password', 2)
+    r = c.post('/api/v1/auth/login', json={'email': 'a@b.com', 'password': 'wrong'})
+    assert r.status_code == 401
+    body = r.json()
+    assert body['detail'] == 'invalid email or password'
+    assert body['attempts_left'] == 2
 
 
 def test_login_rate_limited_sets_retry_after_header(auth_client):
@@ -200,6 +213,21 @@ def test_login_missing_required(auth_client):
     c, _ = auth_client
     r = c.post('/api/v1/auth/login', json={})
     assert r.status_code == 422
+
+
+def test_signup_normalizes_email_case_and_whitespace(auth_client):
+    c, mock = auth_client
+    mock.create_user_with_password.return_value = _user()
+    c.post('/api/v1/auth/signup', json={**_SIGNUP_BODY, 'email': '  A@B.COM  '})
+    user_arg = mock.create_user_with_password.call_args.args[0]
+    assert user_arg.email == 'a@b.com'
+
+
+def test_login_normalizes_email_case_and_whitespace(auth_client):
+    c, mock = auth_client
+    mock.verify_password_login.return_value = _user()
+    c.post('/api/v1/auth/login', json={'email': '  A@B.COM  ', 'password': 'whatever'})
+    mock.verify_password_login.assert_called_once_with('a@b.com', 'whatever')
 
 
 def test_get_me_returns_current_user(auth_client):

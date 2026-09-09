@@ -11,9 +11,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict
 
 from beanquest.application import Application
-from beanquest.auth import AccessTokenAuth, PasswordAuth, StrongPassword
+from beanquest.auth import AccessTokenAuth, NormalizedEmail, PasswordAuth, StrongPassword
 from beanquest.db import Database
-from beanquest.errors import Conflict, NotFound, RateLimited, Unauthorized
+from beanquest.errors import Conflict, InvalidCredentials, NotFound, RateLimited, Unauthorized
 from beanquest.models import BrewingMethod, PastLog, RoastingMethod, User
 
 STATIC_DIR = pathlib.Path(__file__).parent / 'static'
@@ -68,6 +68,14 @@ def handle_unauthorized(_request: Request, exc: Unauthorized):
     return JSONResponse(status_code=401, content={'detail': str(exc)})
 
 
+@app.exception_handler(InvalidCredentials)
+def handle_invalid_credentials(_request: Request, exc: InvalidCredentials):
+    return JSONResponse(
+        status_code=401,
+        content={'detail': str(exc), 'attempts_left': exc.attempts_left},
+    )
+
+
 @app.exception_handler(RateLimited)
 def handle_rate_limited(_request: Request, exc: RateLimited):
     return JSONResponse(
@@ -118,14 +126,14 @@ class SignupRequest(BaseModel):
 
     first_name: str
     last_name: str
-    email: str
+    email: NormalizedEmail
     password: StrongPassword
 
 
 class LoginRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
-    email: str
+    email: NormalizedEmail
     password: str
 
 

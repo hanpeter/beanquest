@@ -84,9 +84,16 @@ class Database:
     def record_login_failure(self, email: str) -> LoginAttempt | None:
         """Atomically reserves this attempt and records it as a failure.
         Returns None if the account is already locked — an already-locked
-        row is left untouched, so hammering it can't extend the lock.
+        row is left untouched, so hammering it can't extend the lock. A row
+        idle for at least one LOCK_DURATION since its last failure starts
+        fresh instead of continuing its old count (see UPSERT_FAILURE).
         """
-        row = self._select_one(LoginAttempt.UPSERT_FAILURE, [email])
+        params = {
+            'email': email,
+            'max_failures': LoginAttempt.MAX_FAILURES,
+            'lock_duration': LoginAttempt.LOCK_DURATION,
+        }
+        row = self._select_one(LoginAttempt.UPSERT_FAILURE, params)
         return LoginAttempt.model_validate(row) if row else None
 
     def reset_login_attempts(self, email: str) -> None:

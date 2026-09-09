@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pytest
 from pydantic import ValidationError
 
@@ -393,9 +395,37 @@ def test_login_attempt_sql_references_table():
     assert 'login_attempts' in LoginAttempt.DELETE
 
 
-def test_login_attempt_upsert_has_threshold_and_lockout_duration():
-    assert '>= 5' in LoginAttempt.UPSERT_FAILURE
-    assert "INTERVAL '5 minutes'" in LoginAttempt.UPSERT_FAILURE
+def test_login_attempt_upsert_binds_threshold_and_lockout_duration():
+    """MAX_FAILURES/LOCK_DURATION are bound as query parameters, never
+    string-interpolated into the SQL — so neither is an injection surface,
+    even if either becomes config/env-driven later."""
+    assert '%(max_failures)s' in LoginAttempt.UPSERT_FAILURE
+    assert '%(lock_duration)s' in LoginAttempt.UPSERT_FAILURE
+    assert '5' not in LoginAttempt.UPSERT_FAILURE
+    assert 'INTERVAL' not in LoginAttempt.UPSERT_FAILURE
+
+
+def test_login_attempt_max_failures_value():
+    assert LoginAttempt.MAX_FAILURES == 5
+
+
+def test_login_attempt_upsert_resets_stale_rows_via_updated_at():
+    """A row idle for at least one lock_duration since its last failure starts
+    fresh on this failure, whether or not it was ever actually locked — this
+    is what stops an expired lock from re-arming itself on the very next
+    attempt. Checked via updated_at, not a separate locked_until branch."""
+    assert (
+        'login_attempts.updated_at < CURRENT_TIMESTAMP - %(lock_duration)s'
+        in LoginAttempt.UPSERT_FAILURE
+    )
+    # Both the failure_count and locked_until CASEs key off it.
+    assert LoginAttempt.UPSERT_FAILURE.count(
+        'login_attempts.updated_at < CURRENT_TIMESTAMP - %(lock_duration)s'
+    ) == 2
+
+
+def test_login_attempt_lock_duration_value():
+    assert LoginAttempt.LOCK_DURATION == timedelta(minutes=5)
 
 
 def test_login_attempt_upsert_guards_against_extending_existing_lock():

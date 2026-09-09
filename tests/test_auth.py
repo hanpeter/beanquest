@@ -4,7 +4,7 @@ import jwt
 import pytest
 from pydantic import BaseModel, ConfigDict, ValidationError
 
-from beanquest.auth import AccessTokenAuth, PasswordAuth, StrongPassword
+from beanquest.auth import AccessTokenAuth, NormalizedEmail, PasswordAuth, StrongPassword
 from beanquest.errors import Unauthorized
 
 
@@ -12,6 +12,12 @@ class _PasswordModel(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     password: StrongPassword
+
+
+class _EmailModel(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    email: NormalizedEmail
 
 
 # ---------------------------------------------------------------------------
@@ -95,3 +101,20 @@ def test_strong_password_rejects_short_password():
 def test_strong_password_rejects_single_category():
     with pytest.raises(ValidationError):
         _PasswordModel(password='alllowercase')
+
+
+# ---------------------------------------------------------------------------
+# NormalizedEmail
+# ---------------------------------------------------------------------------
+
+def test_normalized_email_lowercases_and_strips():
+    assert _EmailModel(email='  A@B.COM  ').email == 'a@b.com'
+
+
+def test_normalized_email_accepts_max_length():
+    email = 'a' * 251 + '@b.co'  # exactly 256 chars
+    assert len(email) == 256
+    with pytest.raises(ValidationError):
+        _EmailModel(email=email)
+    ok_email = email[:-1]  # 255 chars — matches the users/login_attempts columns
+    assert _EmailModel(email=ok_email).email == ok_email

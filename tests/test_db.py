@@ -216,7 +216,11 @@ def test_record_login_failure_returns_attempt(make_pool):
     assert result.failure_count == 1
     sql, params = pool.last_conn.last_cursor.calls[0]
     assert sql == LoginAttempt.UPSERT_FAILURE
-    assert params == ['a@b.com']
+    assert params == {
+        'email': 'a@b.com',
+        'max_failures': LoginAttempt.MAX_FAILURES,
+        'lock_duration': LoginAttempt.LOCK_DURATION,
+    }
 
 
 def test_record_login_failure_returns_none_when_already_locked(make_pool):

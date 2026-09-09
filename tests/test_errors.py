@@ -1,4 +1,4 @@
-from beanquest.errors import Conflict, NotFound, RateLimited, Unauthorized
+from beanquest.errors import Conflict, InvalidCredentials, NotFound, RateLimited, Unauthorized
 
 
 def test_not_found_is_lookup_error():
@@ -64,3 +64,21 @@ def test_rate_limited_can_be_raised_and_caught():
         raise RateLimited('test', 1)
     except RuntimeError as e:
         assert isinstance(e, RateLimited)
+
+
+def test_invalid_credentials_is_unauthorized():
+    assert issubclass(InvalidCredentials, Unauthorized)
+
+
+def test_invalid_credentials_accepts_message_and_attempts_left():
+    exc = InvalidCredentials('invalid email or password', 3)
+    assert 'invalid email or password' in str(exc)
+    assert exc.attempts_left == 3
+
+
+def test_invalid_credentials_can_be_raised_and_caught_as_unauthorized():
+    try:
+        raise InvalidCredentials('test', 2)
+    except Unauthorized as e:
+        assert isinstance(e, InvalidCredentials)
+        assert e.attempts_left == 2

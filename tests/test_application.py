@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from beanquest.application import Application
-from beanquest.errors import Conflict, NotFound, RateLimited, Unauthorized
+from beanquest.errors import Conflict, InvalidCredentials, NotFound, RateLimited
 from beanquest.models import AuthIdentity, BrewingMethod, LoginAttempt, PastLog, RoastingMethod, User
 
 
@@ -134,39 +134,42 @@ def test_verify_password_login_retry_after_defaults_to_one_second_when_not_locke
     assert exc_info.value.retry_after_seconds == 1
 
 
-def test_verify_password_login_unknown_email_raises_unauthorized():
+def test_verify_password_login_unknown_email_raises_invalid_credentials():
     db = MagicMock()
     db.record_login_failure.return_value = LoginAttempt(email='a@b.com', failure_count=1)
     db.get_user_by_email.return_value = None
     app = _make_app(db, MagicMock())
-    with pytest.raises(Unauthorized):
+    with pytest.raises(InvalidCredentials) as exc_info:
         app.verify_password_login('a@b.com', 'x')
+    assert exc_info.value.attempts_left == 4
     db.reset_login_attempts.assert_not_called()
 
 
-def test_verify_password_login_no_password_identity_raises_unauthorized():
+def test_verify_password_login_no_password_identity_raises_invalid_credentials():
     db = MagicMock()
     db.record_login_failure.return_value = LoginAttempt(email='a@b.com', failure_count=1)
     db.get_user_by_email.return_value = _user()
     db.get_auth_identity.return_value = None
     app = _make_app(db, MagicMock())
-    with pytest.raises(Unauthorized):
+    with pytest.raises(InvalidCredentials) as exc_info:
         app.verify_password_login('a@b.com', 'x')
+    assert exc_info.value.attempts_left == 4
     db.reset_login_attempts.assert_not_called()
 
 
-def test_verify_password_login_identity_without_password_hash_raises_unauthorized():
+def test_verify_password_login_identity_without_password_hash_raises_invalid_credentials():
     db = MagicMock()
     db.record_login_failure.return_value = LoginAttempt(email='a@b.com', failure_count=1)
     db.get_user_by_email.return_value = _user()
     db.get_auth_identity.return_value = AuthIdentity(user_id=1, provider='google', provider_uid='sub-1')
     app = _make_app(db, MagicMock())
-    with pytest.raises(Unauthorized):
+    with pytest.raises(InvalidCredentials) as exc_info:
         app.verify_password_login('a@b.com', 'x')
+    assert exc_info.value.attempts_left == 4
     db.reset_login_attempts.assert_not_called()
 
 
-def test_verify_password_login_wrong_password_raises_unauthorized():
+def test_verify_password_login_wrong_password_raises_invalid_credentials():
     db = MagicMock()
     password_auth = MagicMock()
     db.record_login_failure.return_value = LoginAttempt(email='a@b.com', failure_count=1)
@@ -174,9 +177,47 @@ def test_verify_password_login_wrong_password_raises_unauthorized():
     db.get_auth_identity.return_value = _identity()
     password_auth.verify.return_value = False
     app = _make_app(db, password_auth)
-    with pytest.raises(Unauthorized):
+    with pytest.raises(InvalidCredentials) as exc_info:
         app.verify_password_login('a@b.com', 'wrong')
+    assert exc_info.value.attempts_left == 4
     db.reset_login_attempts.assert_not_called()
+
+
+@pytest.mark.parametrize(('failure_count', 'expected_attempts_left'), [(2, 3), (3, 2), (4, 1)])
+def test_verify_password_login_attempts_left_counts_down(failure_count, expected_attempts_left):
+    db = MagicMock()
+    password_auth = MagicMock()
+    db.record_login_failure.return_value = LoginAttempt(email='a@b.com', failure_count=failure_count)
+    db.get_user_by_email.return_value = _user()
+    db.get_auth_identity.return_value = _identity()
+    password_auth.verify.return_value = False
+    app = _make_app(db, password_auth)
+    with pytest.raises(InvalidCredentials) as exc_info:
+        app.verify_password_login('a@b.com', 'wrong')
+    assert exc_info.value.attempts_left == expected_attempts_left
+
+
+def test_verify_password_login_fifth_failure_locks_instead_of_invalid_credentials():
+    """The failure that hits the limit must announce the lock immediately —
+    not fall through to a plain invalid-credentials response that leaves the
+    user to discover the lock on their next attempt."""
+    db = MagicMock()
+    password_auth = MagicMock()
+    locked_until = datetime.now(timezone.utc) + timedelta(minutes=5)
+    db.record_login_failure.return_value = LoginAttempt(
+        email='a@b.com', failure_count=5, locked_until=locked_until,
+    )
+    db.get_user_by_email.return_value = _user()
+    db.get_auth_identity.return_value = _identity()
+    password_auth.verify.return_value = False
+    app = _make_app(db, password_auth)
+
+    with pytest.raises(RateLimited) as exc_info:
+        app.verify_password_login('a@b.com', 'wrong')
+
+    assert exc_info.value.retry_after_seconds > 0
+    # No extra fetch needed — the row from record_login_failure already has locked_until.
+    db.get_login_attempt.assert_not_called()
 
 
 # ===========================================================================

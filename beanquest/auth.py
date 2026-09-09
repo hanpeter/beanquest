@@ -34,6 +34,22 @@ def _validate_password_strength(v: str) -> str:
 StrongPassword = Annotated[str, AfterValidator(_validate_password_strength)]
 
 
+_MAX_EMAIL_LENGTH = 255  # matches the users/login_attempts VARCHAR(255) columns
+
+
+def _normalize_email(v: str) -> str:
+    v = v.strip().lower()
+    if len(v) > _MAX_EMAIL_LENGTH:
+        raise ValueError(f'email must be at most {_MAX_EMAIL_LENGTH} characters long')
+    return v
+
+
+# Canonical form for every user-supplied address. Applied at the API boundary so
+# both the users unique constraint and the login_attempts key (which rate limiting
+# depends on) see one spelling per account.
+NormalizedEmail = Annotated[str, AfterValidator(_normalize_email)]
+
+
 class PasswordAuth:
     def create(self, password: str) -> str:
         return bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12)).decode()
