@@ -15,6 +15,9 @@ class Application:
     # User / auth
     # -------------------------------------------------------------------------
 
+    # TODO: no way to change a password (or update a profile) once set —
+    # needs an AuthIdentity.UPDATE + a change-password endpoint.
+
     def get_user(self, id) -> User:
         result = self._database.get_user(id)
         if result is None:
