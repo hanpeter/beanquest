@@ -57,6 +57,21 @@ def test_get_user_raises_not_found():
         app.get_user(99)
 
 
+def test_email_exists_true():
+    db = MagicMock()
+    db.get_user_by_email.return_value = _user(email='a@b.com')
+    app = _make_app(db)
+    assert app.email_exists('a@b.com') is True
+    db.get_user_by_email.assert_called_once_with('a@b.com')
+
+
+def test_email_exists_false():
+    db = MagicMock()
+    db.get_user_by_email.return_value = None
+    app = _make_app(db)
+    assert app.email_exists('nobody@example.com') is False
+
+
 def test_create_user_with_password_hashes_and_links_identity():
     db = MagicMock()
     password_auth = MagicMock()

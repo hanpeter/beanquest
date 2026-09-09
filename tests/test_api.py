@@ -117,6 +117,7 @@ def test_get_auth_returns_from_state():
 def test_openapi_lists_all_routes(client):
     c, _ = client
     paths = c.get('/openapi.json').json()['paths']
+    assert '/api/v1/auth/lookup' in paths
     assert '/api/v1/auth/signup' in paths
     assert '/api/v1/auth/login' in paths
     assert '/api/v1/auth/me' in paths
@@ -126,6 +127,39 @@ def test_openapi_lists_all_routes(client):
     assert '/api/v1/roasting-methods/{id}' in paths
     assert '/api/v1/past-logs' in paths
     assert '/api/v1/past-logs/{id}' in paths
+
+
+# ---------------------------------------------------------------------------
+# Auth: lookup
+# ---------------------------------------------------------------------------
+
+def test_lookup_existing_email_returns_true(auth_client):
+    c, mock = auth_client
+    mock.email_exists.return_value = True
+    r = c.post('/api/v1/auth/lookup', json={'email': 'a@b.com'})
+    assert r.status_code == 200
+    assert r.json() == {'exists': True}
+
+
+def test_lookup_unknown_email_returns_false(auth_client):
+    c, mock = auth_client
+    mock.email_exists.return_value = False
+    r = c.post('/api/v1/auth/lookup', json={'email': 'nobody@example.com'})
+    assert r.status_code == 200
+    assert r.json() == {'exists': False}
+
+
+def test_lookup_missing_required(auth_client):
+    c, _ = auth_client
+    r = c.post('/api/v1/auth/lookup', json={})
+    assert r.status_code == 422
+
+
+def test_lookup_normalizes_email_case_and_whitespace(auth_client):
+    c, mock = auth_client
+    mock.email_exists.return_value = True
+    c.post('/api/v1/auth/lookup', json={'email': '  A@B.COM  '})
+    mock.email_exists.assert_called_once_with('a@b.com')
 
 
 # ---------------------------------------------------------------------------

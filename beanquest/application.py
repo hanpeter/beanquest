@@ -29,6 +29,9 @@ class Application:
             raise NotFound(f'User {id} not found')
         return result
 
+    def email_exists(self, email: str) -> bool:
+        return self._database.get_user_by_email(email) is not None
+
     def create_user_with_password(self, user: User, password: str) -> User:
         """The only way a user comes into existence — always with a login
         method attached. A future create_user_with_google etc. would follow

@@ -121,6 +121,16 @@ CurrentUserDep = Annotated[int, Depends(get_current_user_id)]
 auth_router = APIRouter(prefix='/api/v1/auth', tags=['auth'])
 
 
+class LookupRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    email: NormalizedEmail
+
+
+class LookupResponse(BaseModel):
+    exists: bool
+
+
 class SignupRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
@@ -140,6 +150,11 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = 'bearer'
+
+
+@auth_router.post('/lookup', response_model=LookupResponse)
+def lookup(body: LookupRequest, app: AppDep):
+    return LookupResponse(exists=app.email_exists(body.email))
 
 
 @auth_router.post('/signup', response_model=TokenResponse, status_code=201)
