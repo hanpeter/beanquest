@@ -325,7 +325,7 @@ def test_user_select_one_extends_all():
 
 def test_user_select_by_email_extends_all():
     assert User.SELECT_ALL in User.SELECT_BY_EMAIL
-    assert 'WHERE email = %s' in User.SELECT_BY_EMAIL
+    assert 'WHERE LOWER(email) = LOWER(%s)' in User.SELECT_BY_EMAIL
 
 
 def test_user_insert_excludes_password_hash():
@@ -407,6 +407,17 @@ def test_login_attempt_upsert_binds_threshold_and_lockout_duration():
 
 def test_login_attempt_max_failures_value():
     assert LoginAttempt.MAX_FAILURES == 5
+
+
+def test_login_attempt_queries_normalize_email_via_parameter():
+    """email is matched/stored via LOWER(%s) on the *parameter*, not LOWER(email)
+    on the column — this still uses the plain PRIMARY KEY index (unlike wrapping
+    the column, which would need a matching functional index) while making every
+    query here self-normalizing, independent of whether the caller already
+    passed a NormalizedEmail."""
+    assert 'WHERE email = LOWER(%s)' in LoginAttempt.SELECT_ONE
+    assert 'VALUES (LOWER(%(email)s), 1, NULL, CURRENT_TIMESTAMP)' in LoginAttempt.UPSERT_FAILURE
+    assert LoginAttempt.DELETE == 'DELETE FROM login_attempts WHERE email = LOWER(%s)'
 
 
 def test_login_attempt_upsert_resets_stale_rows_via_updated_at():

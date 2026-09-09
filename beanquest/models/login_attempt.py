@@ -20,9 +20,17 @@ class LoginAttempt(BaseModel):
     MAX_FAILURES: ClassVar[int] = 5
     LOCK_DURATION: ClassVar[timedelta] = timedelta(minutes=5)
 
+    # email is matched/stored via LOWER(%s) on the *parameter*, not LOWER(email)
+    # on the column — this still hits the plain PRIMARY KEY index (the planner
+    # reduces LOWER($1) to a single constant before comparing, since there's no
+    # column reference inside it) while making every query here self-normalizing,
+    # independent of whether the caller already passed a NormalizedEmail. That
+    # matters here specifically: unlike `users`, this table has no case-insensitive
+    # guarantee of its own otherwise, and a caller that bypassed normalization
+    # would otherwise fragment one account's lockout counter across casings.
     SELECT_ONE: ClassVar[str] = (
         'SELECT email, failure_count, locked_until, updated_at '
-        'FROM login_attempts WHERE email = %s'
+        'FROM login_attempts WHERE email = LOWER(%s)'
     )
     # Reserves this attempt and records it as a failure in one atomic step,
     # run *before* the password is checked — see Application.verify_password_login.
@@ -44,7 +52,7 @@ class LoginAttempt(BaseModel):
     # never reached the threshold at all (e.g. 3 failures, then a long gap).
     UPSERT_FAILURE: ClassVar[str] = dedent('''\
         INSERT INTO login_attempts (email, failure_count, locked_until, updated_at)
-        VALUES (%(email)s, 1, NULL, CURRENT_TIMESTAMP)
+        VALUES (LOWER(%(email)s), 1, NULL, CURRENT_TIMESTAMP)
         ON CONFLICT (email) DO UPDATE SET
             failure_count = CASE
                 WHEN login_attempts.updated_at < CURRENT_TIMESTAMP - %(lock_duration)s THEN 1
@@ -60,7 +68,7 @@ class LoginAttempt(BaseModel):
         WHERE login_attempts.locked_until IS NULL OR login_attempts.locked_until < CURRENT_TIMESTAMP
         RETURNING email, failure_count, locked_until, updated_at
     ''')
-    DELETE: ClassVar[str] = 'DELETE FROM login_attempts WHERE email = %s'
+    DELETE: ClassVar[str] = 'DELETE FROM login_attempts WHERE email = LOWER(%s)'
 
     email: str
     failure_count: int
