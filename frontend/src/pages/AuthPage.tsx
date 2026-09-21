@@ -211,12 +211,6 @@ export function AuthPage() {
         <PrimaryButton onClick={handleCreate} disabled={pending || !canCreate}>
           {pending ? 'Creating…' : 'Create account'}
         </PrimaryButton>
-        <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', color: 'text.secondary', mt: 2 }}>
-          By creating an account you agree to the terms.
-        </Typography>
-        <Box sx={{ textAlign: 'center', mt: 2 }}>
-          <LinkButton onClick={backToLookup}>Use a different email</LinkButton>
-        </Box>
       </AuthShell>
     );
   }
