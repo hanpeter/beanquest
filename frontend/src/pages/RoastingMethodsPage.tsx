@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Alert, Box, CircularProgress, Container, Fab, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import {
+  ApiError,
   getRoastingMethods,
   getPastLogs,
   createRoastingMethod,
@@ -52,6 +53,7 @@ export function RoastingMethodsPage() {
         setLogs(pastLogs ?? []);
       })
       .catch(err => {
+        if (err instanceof ApiError && err.status === 401) return; // RequireAuth handles the redirect
         if (!ignore) setError((err as Error).message ?? 'Failed to load data');
       })
       .finally(() => {

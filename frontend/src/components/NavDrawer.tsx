@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Box,
   Divider,
@@ -13,8 +14,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import CloseIcon from '@mui/icons-material/Close';
 import LocalCafeIcon from '@mui/icons-material/LocalCafe';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
+import LogoutIcon from '@mui/icons-material/Logout';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import { useAuth } from '../AuthContext';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface NavDrawerProps {
   open: boolean;
@@ -24,6 +28,8 @@ interface NavDrawerProps {
 export function NavDrawer({ open, onClose }: NavDrawerProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { email, signOut } = useAuth();
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
   const isRoasting = location.pathname === '/roasting-methods';
   const isBrewing = location.pathname === '/brewing-methods';
   const isLogs = !isRoasting && !isBrewing;
@@ -31,6 +37,13 @@ export function NavDrawer({ open, onClose }: NavDrawerProps) {
   const go = (path: string) => {
     navigate(path);
     onClose();
+  };
+
+  const handleLogout = () => {
+    setConfirmingLogout(false);
+    onClose();
+    signOut();
+    navigate('/login', { replace: true });
   };
 
   return (
@@ -82,7 +95,27 @@ export function NavDrawer({ open, onClose }: NavDrawerProps) {
           </ListItemIcon>
           <ListItemText primary="Ask the AI" />
         </ListItemButton>
+        <Divider sx={{ my: 1, borderStyle: 'dashed' }} />
+        {email && (
+          <Typography variant="caption" sx={{ display: 'block', px: 2, py: 0.5, color: 'text.secondary' }}>
+            {email}
+          </Typography>
+        )}
+        <ListItemButton onClick={() => setConfirmingLogout(true)}>
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <LogoutIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Log out" />
+        </ListItemButton>
       </List>
+      <ConfirmDialog
+        open={confirmingLogout}
+        title="Log out?"
+        message="You'll need to log in again to keep using BeanQuest."
+        confirmLabel="Log out"
+        onConfirm={handleLogout}
+        onCancel={() => setConfirmingLogout(false)}
+      />
     </Drawer>
   );
 }

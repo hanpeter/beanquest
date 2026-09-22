@@ -1,6 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { AuthProvider } from '../AuthContext';
 import { RoastingMethodsPage } from './RoastingMethodsPage';
 import * as api from '../api';
 import type { PastLog, RoastingMethod } from '../types';
@@ -33,10 +34,12 @@ afterEach(() => {
 async function renderPage() {
   render(
     <MemoryRouter initialEntries={['/roasting-methods']}>
-      <Routes>
-        <Route path="/roasting-methods" element={<RoastingMethodsPage />} />
-        <Route path="/logs" element={<div>Logs page reached</div>} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/roasting-methods" element={<RoastingMethodsPage />} />
+          <Route path="/logs" element={<div>Logs page reached</div>} />
+        </Routes>
+      </AuthProvider>
     </MemoryRouter>,
   );
   await waitFor(() => expect(screen.getByText('Popcorn popper')).toBeInTheDocument());

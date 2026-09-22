@@ -10,9 +10,10 @@ from beanquest.models.validator import OptionalText
 class PastLog(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
-    SELECT_ALL: ClassVar[str] = dedent('''\
+    BASE_SELECT: ClassVar[str] = dedent('''\
         SELECT
             past_logs.id,
+            past_logs.user_id,
             past_logs.bean_name,
             past_logs.process,
             past_logs.target_roast_level,
@@ -29,17 +30,18 @@ class PastLog(BaseModel):
         INNER JOIN brewing_methods ON past_logs.brewing_method_id = brewing_methods.id
         INNER JOIN roasting_methods ON past_logs.roasting_method_id = roasting_methods.id
     ''')
-    SELECT_ONE: ClassVar[str] = SELECT_ALL + 'WHERE past_logs.id = %s\n'
+    SELECT_ALL: ClassVar[str] = BASE_SELECT + 'WHERE past_logs.user_id = %s\n'
+    SELECT_ONE: ClassVar[str] = BASE_SELECT + 'WHERE past_logs.id = %s AND past_logs.user_id = %s\n'
     INSERT: ClassVar[str] = dedent('''\
         INSERT INTO past_logs (
             bean_name, process, target_roast_level,
             roasting_method_id, brewing_method_id,
-            roasting_notes, grinder_setting, rating_score, general_notes, date_logged
+            roasting_notes, grinder_setting, rating_score, general_notes, date_logged, user_id
         ) VALUES (
             %(bean_name)s, %(process)s, %(target_roast_level)s,
             %(roasting_method_id)s, %(brewing_method_id)s,
             %(roasting_notes)s, %(grinder_setting)s, %(rating_score)s, %(general_notes)s,
-            COALESCE(%(date_logged)s, now())
+            COALESCE(%(date_logged)s, now()), %(user_id)s
         ) RETURNING id
     ''')
     UPDATE: ClassVar[str] = dedent('''\
@@ -54,9 +56,9 @@ class PastLog(BaseModel):
             rating_score = %(rating_score)s,
             general_notes = %(general_notes)s,
             date_logged = COALESCE(%(date_logged)s, date_logged)
-        WHERE id = %(id)s
+        WHERE id = %(id)s AND user_id = %(user_id)s
     ''')
-    DELETE: ClassVar[str] = 'DELETE FROM past_logs WHERE id = %s'
+    DELETE: ClassVar[str] = 'DELETE FROM past_logs WHERE id = %s AND user_id = %s'
     SERVER_FIELDS: ClassVar[frozenset[str]] = frozenset({
         'brewing_method_name', 'roasting_method_name',
     })
@@ -65,6 +67,7 @@ class PastLog(BaseModel):
     })
 
     id: int | None = None
+    user_id: int
     bean_name: str
     process: str
     target_roast_level: OptionalText = ''
