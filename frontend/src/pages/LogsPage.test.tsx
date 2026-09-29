@@ -1,6 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { AuthProvider } from '../AuthContext';
 import { LogsPage } from './LogsPage';
 import * as api from '../api';
 import type { PastLog } from '../types';
@@ -30,7 +31,9 @@ afterEach(() => {
 async function renderPage(initialEntry = '/logs') {
   render(
     <MemoryRouter initialEntries={[initialEntry]}>
-      <LogsPage />
+      <AuthProvider>
+        <LogsPage />
+      </AuthProvider>
     </MemoryRouter>,
   );
   await waitFor(() => expect(screen.getByText('Guatemala Huehuetenango')).toBeInTheDocument());
@@ -124,7 +127,9 @@ describe('LogsPage', () => {
   it('shows the empty state when the deep-linked method has no matching logs', async () => {
     render(
       <MemoryRouter initialEntries={['/logs?roasting=Air%20roaster']}>
-        <LogsPage />
+        <AuthProvider>
+          <LogsPage />
+        </AuthProvider>
       </MemoryRouter>,
     );
     await waitFor(() => expect(screen.getByText('No logs match')).toBeInTheDocument());
@@ -139,7 +144,9 @@ describe('LogsPage', () => {
   it('shows the empty state when the deep-linked brewing method has no matching logs', async () => {
     render(
       <MemoryRouter initialEntries={['/logs?brewing=Pour%20over']}>
-        <LogsPage />
+        <AuthProvider>
+          <LogsPage />
+        </AuthProvider>
       </MemoryRouter>,
     );
     await waitFor(() => expect(screen.getByText('No logs match')).toBeInTheDocument());

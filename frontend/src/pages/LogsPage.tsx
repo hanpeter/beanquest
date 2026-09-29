@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Alert, Box, Chip, CircularProgress, Container, Fab, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import {
+  ApiError,
   getPastLogs,
   getRoastingMethods,
   getBrewingMethods,
@@ -74,6 +75,7 @@ export function LogsPage() {
         setBrewingMethods(brewing ?? []);
       })
       .catch(err => {
+        if (err instanceof ApiError && err.status === 401) return; // RequireAuth handles the redirect
         if (!ignore) setError((err as Error).message ?? 'Failed to load data');
       })
       .finally(() => {
