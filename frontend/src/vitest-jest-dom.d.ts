@@ -1,7 +1,6 @@
 import type { TestingLibraryMatchers } from '@testing-library/jest-dom/matchers';
 
-// jest-dom 7 still augments Vitest's Assertion with one type parameter; Vitest 5 has two.
+// TODO: delete this file once @testing-library/jest-dom ships Vitest 5 support (testing-library/jest-dom#738, fix in #742).
 declare module 'vitest' {
-  interface Assertion<R, T> extends TestingLibraryMatchers<T, R> {}
-  interface AsymmetricMatchersContaining extends TestingLibraryMatchers<any, any> {}
+  interface Matchers<R, T> extends TestingLibraryMatchers<unknown, R> {}
 }
