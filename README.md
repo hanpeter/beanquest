@@ -23,6 +23,7 @@ A self-hosted journal to track beans, roasters, brewing gear, and tasting for co
   - [Option 2: Run Locally](#option-2-run-locally)
   - [Configuration](#configuration)
   - [API](#api)
+    - [Auth](#auth)
 - [Contributing](#contributing)
 
 ## Purpose
@@ -35,11 +36,13 @@ BeanQuest tracks the whole loop of a cup of coffee: the roaster that roasted it,
 | Roasting Methods | Roaster (e.g. home-roasting with a drum roaster or a local roaster) |
 | Logs | Tasting journal: bean name, process, target roast level, linked roasting + brewing method, roasting notes, grinder setting, 0-5 rating, general notes, date logged |
 
+Data is per-user: sign up or log in with an email and password, and you only see your own methods and logs.
+
 The app is a layered FastAPI service (`api.py` → `application.py` → `db.py` raw SQL over psycopg → Pydantic models) that also serves the built React SPA, so the whole thing runs as one process.
 
 ## Tech Stack
 
-- **Backend:** FastAPI, Uvicorn, psycopg 3 (connection pool), Pydantic v2, PostgreSQL 17
+- **Backend:** FastAPI, Uvicorn, psycopg 3 (connection pool), Pydantic v2, PostgreSQL 17, bcrypt password hashing, PyJWT access tokens
 - **Frontend:** React 19, TypeScript, Vite 8, MUI v9
 - **Packaging:** Poetry (backend), npm (frontend), single multi-stage distroless Docker image
 
@@ -72,11 +75,12 @@ cd frontend && npm ci
 
 ### Option 1: Use Docker
 
-The container needs a `DATABASE_URL` (see [Configuration](#configuration)) and listens on port 8000:
+The container needs `DATABASE_URL` and `JWT_SECRET` (see [Configuration](#configuration)) and listens on port 8000:
 
 ```bash
 docker run --rm -p 8000:8000 \
   -e DATABASE_URL="postgresql://beanquest:beanquest@host.docker.internal:5432/beanquest" \
+  -e JWT_SECRET="$(openssl rand -hex 32)" \
   beanquest
 ```
 
@@ -106,6 +110,7 @@ docker run --rm -p 8000:8000 \
 
    ```bash
    DATABASE_URL="postgresql://beanquest:beanquest@localhost:5432/beanquest" \
+     JWT_SECRET="$(openssl rand -hex 32)" \
      poetry run uvicorn beanquest.api:app --reload
    ```
 
@@ -118,12 +123,14 @@ For frontend-only iteration, run `npm run dev` in `frontend/` instead of step 3.
 | Variable | Required | Description |
 |---|---|---|
 | `DATABASE_URL` | Yes | Postgres connection string, e.g. `postgresql://beanquest:beanquest@localhost:5432/beanquest`. The app fails to start without it. |
+| `JWT_SECRET` | Yes | Secret used to sign access tokens. The app fails to start without it. Changing it invalidates all issued tokens. |
+| `ACCESS_TOKEN_TTL_SECONDS` | No | Access token lifetime in seconds. Defaults to `14400` (4 hours). |
 
 Host and port are not read from the environment: they're set on the `uvicorn` command line (`--host`, `--port`).
 
 ### API
 
-All resources live under `/api/v1` and follow the same CRUD shape:
+All resources live under `/api/v1`. Every resource route requires an `Authorization: Bearer <token>` header (a missing, invalid, or expired token returns `401`) and only returns or modifies the caller's own records. They follow the same CRUD shape:
 
 - `brewing-methods`
 - `roasting-methods`
@@ -132,12 +139,30 @@ All resources live under `/api/v1` and follow the same CRUD shape:
 Each supports `GET` (list), `POST` (create, `201`), `GET /{id}`, `PUT /{id}`, and `DELETE /{id}` (`204`). A missing `{id}` returns `404`; deleting a roasting or brewing method still referenced by a log returns `409` (the schema uses `ON DELETE RESTRICT`).
 
 ```bash
-curl http://127.0.0.1:8000/api/v1/brewing-methods
+TOKEN=$(curl -s -X POST http://127.0.0.1:8000/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email": "you@example.com", "password": "your-password"}' | jq -r .access_token)
+
+curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8000/api/v1/brewing-methods
 
 curl -X POST http://127.0.0.1:8000/api/v1/roasting-methods \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"roaster_name": "Sey Coffee", "description": "Brooklyn-based"}'
 ```
+
+#### Auth
+
+Under `/api/v1/auth`:
+
+| Endpoint | Description |
+|---|---|
+| `POST /lookup` | Body `{"email"}`. Returns `{"exists": bool}`; the frontend uses it to choose between login and signup. |
+| `POST /signup` | Body `{"first_name", "last_name", "email", "password"}`. Returns `201` and an access token. Passwords need 10+ characters and at least 2 of: lowercase, uppercase, number, special character. |
+| `POST /login` | Body `{"email", "password"}`. Returns an access token. A wrong password returns `401` with `attempts_left`; after 5 failures the account is locked for 5 minutes and returns `429` with a `Retry-After` header. |
+| `GET /me` | Returns the authenticated user. |
+
+Emails are trimmed and lowercased. Tokens are returned as `{"access_token", "token_type": "bearer"}`. There is no password-change or profile-update endpoint yet.
 
 ## Contributing
 
