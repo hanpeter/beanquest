@@ -94,10 +94,12 @@ docker run --rm -p 8000:8000 \
      -p 5432:5432 -v beanquest-pgdata:/var/lib/postgresql/data postgres:17
    ```
 
-2. Apply the schema:
+2. Apply the migrations (see [Database migrations](#database-migrations)):
 
    ```bash
-   docker exec -i beanquest-pg psql -U beanquest -d beanquest < migrations/0001.initial-schema.sql
+   docker run --rm --network container:beanquest-pg -v "$PWD/db:/db" \
+     -e DATABASE_URL="postgres://beanquest:beanquest@localhost:5432/beanquest?sslmode=disable" \
+     ghcr.io/amacneil/dbmate:2.36.0 --no-dump-schema migrate
    ```
 
 3. Build the frontend (outputs into `beanquest/static/`, which the API serves):
@@ -117,6 +119,22 @@ docker run --rm -p 8000:8000 \
 5. Open `http://127.0.0.1:8000`.
 
 For frontend-only iteration, run `npm run dev` in `frontend/` instead of step 3. Vite dev-serves the SPA and proxies `/api` requests to `http://localhost:8000`.
+
+### Database migrations
+
+Migrations live in `db/migrations/` and are applied with [dbmate](https://github.com/amacneil/dbmate). Each file has a `-- migrate:up` and a `-- migrate:down` section, and runs in one transaction. Applied versions are recorded in the `schema_migrations` table.
+
+Create a migration with the same image used in step 2, swapping `migrate` for `new <name>`:
+
+```bash
+docker run --rm -v "$PWD/db:/db" ghcr.io/amacneil/dbmate:2.36.0 new add_thing_table
+```
+
+- `CREATE INDEX CONCURRENTLY` can't run in a transaction. Start that file with `-- migrate:up transaction:false`.
+- The six baseline migrations mirror the original schema and refuse to roll back. Write a real `-- migrate:down` for new ones.
+- dbmate takes no lock, so run it from one place at a time. Never run it at app startup.
+
+On a release tag, CI builds a separate `beanquest-migrator` image (dbmate and the migrations only). A one-off Fly machine runs `migrate` with the app's `DATABASE_URL` secret before the app deploys, and a failed migration stops the deploy. The app image contains neither dbmate nor the migrations. The URL needs `sslmode=disable` if the database server has SSL off.
 
 ### Configuration
 
