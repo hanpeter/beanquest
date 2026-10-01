@@ -10,7 +10,7 @@ COPY frontend/src ./src
 
 RUN npm run build
 
-FROM python:3.13-slim AS backend-builder
+FROM python:3.14-slim AS backend-builder
 
 ENV POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_CREATE=false \
