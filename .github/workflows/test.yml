@@ -33,6 +33,44 @@ jobs:
       - name: Test
         run: poetry run pytest
 
+  migrations:
+    name: Migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: beanquest
+          POSTGRES_PASSWORD: beanquest
+          POSTGRES_DB: beanquest
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U beanquest"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://beanquest:beanquest@localhost:5432/beanquest?sslmode=disable
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build migrator image
+        run: docker build -f docker/beanquest-migrator/Dockerfile -t beanquest-migrator .
+      - name: Migrate
+        run: docker run --rm --network host -e DATABASE_URL beanquest-migrator
+      - name: Migrate again (must be a no-op)
+        run: docker run --rm --network host -e DATABASE_URL beanquest-migrator
+      - name: Status (nothing pending)
+        run: |
+          docker run --rm --network host -e DATABASE_URL beanquest-migrator status | tee status.txt
+          grep -q '^Pending: 0$' status.txt
+      - name: Rollback is refused for baseline migrations
+        run: "! docker run --rm --network host -e DATABASE_URL beanquest-migrator rollback"
+
   frontend:
     name: Frontend
     runs-on: ubuntu-latest
