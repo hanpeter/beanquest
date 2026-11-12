@@ -21,8 +21,21 @@ RUN python3 -m venv /opt/poetry && \
 
 WORKDIR /beanquest
 
-COPY pyproject.toml poetry.lock ./
+# Copy dependency files and README
+COPY pyproject.toml poetry.lock README.md ./
+
+# Install dependencies
 RUN poetry install --without dev --no-root
+
+# Set the package version from the release tag
+ARG VERSION=0.0.0
+RUN poetry version "${VERSION}"
+
+# Copy application code
+COPY beanquest/ ./beanquest/
+
+# Install application
+RUN poetry install --without dev
 
 FROM gcr.io/distroless/python3-debian13 AS runtime
 
