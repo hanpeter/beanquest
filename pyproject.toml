@@ -1,6 +1,7 @@
 [project]
 name = "beanquest"
-version = "0.1.0"
+# Placeholder: CI sets the real version from the git tag at build time
+version = "0.0.0"
 description = "Coffee sourcing, roasting, and extraction tracking"
 authors = [
     { name = "Peter Han", email = "peter@ketch.com" },
