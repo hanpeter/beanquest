@@ -1,4 +1,4 @@
-FROM ghcr.io/amacneil/dbmate:2.37.0@sha256:0101fcc9999596f4a6930e5627296cd91f3bfa225e3e8c1699fc00881e439cc6 AS dbmate
+FROM ghcr.io/amacneil/dbmate:2.38.1@sha256:b0c8a87bfef4f2819fdb0a68ca357a44d12fb90d23eca695fcfc3b7e159cb1c5 AS dbmate
 
 FROM gcr.io/distroless/static-debian13:nonroot AS runtime
 
